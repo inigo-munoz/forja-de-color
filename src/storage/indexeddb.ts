@@ -3,6 +3,7 @@ import type { Inventory } from '../paints/paint';
 import { SEED_INVENTORY } from '../paints/seed';
 import type { Project } from '../projects/project';
 import type { MetaKey, Repository } from './repository';
+import { readBytes } from './bytes';
 
 interface StoredBlob {
   type: string;
@@ -20,15 +21,6 @@ const STORES = ['inventory', 'projects', 'blobs', 'meta'] as const;
 
 // Blobs are stored as bytes + type: an ArrayBuffer is structured-cloneable everywhere,
 // a Blob is not in every IndexedDB implementation.
-function readBytes(blob: Blob): Promise<ArrayBuffer> {
-  if (typeof blob.arrayBuffer === 'function') return blob.arrayBuffer();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as ArrayBuffer);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsArrayBuffer(blob);
-  });
-}
 
 export async function openIndexedDbRepository(dbName = 'forja-de-color'): Promise<Repository> {
   const db = await openDB<ForjaDb>(dbName, 1, {
@@ -53,8 +45,7 @@ export async function openIndexedDbRepository(dbName = 'forja-de-color'): Promis
       await db.put('projects', p);
     },
     deleteProject: (id) => db.delete('projects', id),
-    async putBlob(blob) {
-      const id = crypto.randomUUID();
+    async putBlob(blob, id = crypto.randomUUID()) {
       await db.put('blobs', { type: blob.type, bytes: await readBytes(blob) }, id);
       return id;
     },

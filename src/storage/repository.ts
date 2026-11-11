@@ -11,7 +11,8 @@ export interface Repository {
   getProject(id: string): Promise<Project | undefined>;
   saveProject(p: Project): Promise<void>;
   deleteProject(id: string): Promise<void>;
-  putBlob(blob: Blob): Promise<string>;
+  /** Stores a blob; `id` is only passed when restoring a backup, so references stay valid. */
+  putBlob(blob: Blob, id?: string): Promise<string>;
   getBlob(id: string): Promise<Blob | undefined>;
   deleteBlob(id: string): Promise<void>;
   getMeta(key: MetaKey): Promise<string | undefined>;
