@@ -2,7 +2,7 @@ import type { Inventory, Paint } from './paint';
 
 // The Vallejo Game Color BSL set the user owns: 12 families × 4, each listed lightest → darkest
 // as printed on the box. Names come from the user's list; display colours were sampled once by
-// hand from the Vallejo colour chart in assets-src/ and are approximate. BSL roles (base / shadow
+// hand from Vallejo's published colour chart (kept outside the repo) and are approximate. BSL roles (base / shadow
 // / light / fourth) are pending until confirmed from the user's book.
 const FAMILIES: Array<[family: string, paints: Array<[code: string, name: string, hex: string]>]> = [
   ['BSL Warm Flesh', [['72.003', 'Carne Pálida', '#c9a47f'], ['72.100', 'Carne Rosada', '#e58a6b'], ['72.107', 'Piel de Atenea', '#c85c53'], ['72.108', 'Piel de Súcubo', '#923d45']]],
