@@ -65,3 +65,12 @@ describe('share bridge', () => {
     expect(await createShareBridge({ navigator: nav }).readAnswer()).toBeNull();
   });
 });
+
+describe('share bridge — prompt safety', () => {
+  it('copies the prompt to the clipboard before sharing, in case the share target drops the text', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    const nav = fakeNavigator({ share, canShare: () => true });
+    await createShareBridge({ navigator: nav }).send(pkg);
+    expect(nav.clipboard.writeText).toHaveBeenCalledWith('PROMPT');
+  });
+});

@@ -33,6 +33,12 @@ export function createShareBridge(env: Env = {}): AdvisorBridge {
       const file = new File([pkg.image], 'forja-de-color.jpg', { type: pkg.image.type || 'image/jpeg' });
       const data: ShareData = { text: pkg.text, files: [file] };
       if (typeof nav.share === 'function' && nav.canShare?.(data)) {
+        // Some share targets keep the image and drop the text: keep the prompt on the clipboard too.
+        try {
+          await nav.clipboard?.writeText(pkg.text);
+        } catch {
+          // Not fatal: the share itself still carries the text.
+        }
         try {
           await nav.share(data);
           return 'shared';
