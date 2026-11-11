@@ -43,7 +43,7 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
   });
   const currentMoment = () => (momentField.querySelector<HTMLInputElement>('input[name="moment"]:checked')?.value ?? 'start') as Moment;
 
-  const photoInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment' });
+  const photoInput = h('input', { type: 'file', accept: 'image/*' });
   const sendStatus = h('p', { role: 'status' });
   const promptBox = h('textarea', { 'data-testid': 'prompt', readonly: true, hidden: true });
   const copyPrompt = h('button', { hidden: true, class: 'secondary', onclick: () => void navigator.clipboard?.writeText(promptBox.value).catch(() => promptBox.select()) }, copy.ask.copyPrompt);

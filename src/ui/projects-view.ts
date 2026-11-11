@@ -22,7 +22,7 @@ export async function renderProjects(root: HTMLElement, deps: Deps): Promise<voi
   const form = h('form', { 'data-testid': 'new-project', class: 'card' },
     h('h3', {}, copy.projects.new),
     h('label', {}, copy.projects.name, h('input', { name: 'name', required: true })),
-    h('label', {}, copy.projects.photo, h('input', { name: 'photo', type: 'file', accept: 'image/*', capture: 'environment' })),
+    h('label', {}, copy.projects.photo, h('input', { name: 'photo', type: 'file', accept: 'image/*' })),
     h('button', { type: 'submit' }, copy.projects.create),
   );
   form.addEventListener('submit', async (e) => {

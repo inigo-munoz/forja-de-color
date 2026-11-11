@@ -95,7 +95,7 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
   notes.addEventListener('blur', () => void saveNotes());
   window.addEventListener('pagehide', () => void saveNotes(), { once: true });
 
-  const progressInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment', 'data-testid': 'add-progress' });
+  const progressInput = h('input', { type: 'file', accept: 'image/*', 'data-testid': 'add-progress' });
   progressInput.addEventListener('change', async () => {
     const blobId = await storePhoto(deps, progressInput);
     if (blobId) await update((p) => addProgressPhoto(p, { id: crypto.randomUUID(), takenAt: deps.now().toISOString(), blobId }));
