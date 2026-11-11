@@ -6,6 +6,8 @@ export interface Deps {
   bridge: AdvisorBridge;
   now: () => Date;
   navigate: (hash: string) => void;
+  /** Photo resizer; defaults to platform/image resizeImage. Injected so views are testable without canvas. */
+  resize?: (photo: Blob) => Promise<Blob>;
 }
 
 export type Child = Node | string | null | undefined | false;
@@ -38,4 +40,11 @@ export function download(blob: Blob, filename: string): void {
 /** Replaces root's children, skipping null/undefined/false (replaceChildren would render them as text). */
 export function show(root: HTMLElement, ...children: Child[]): void {
   root.replaceChildren(...children.filter((c): c is Node | string => c !== null && c !== undefined && c !== false));
+}
+
+/** Object URL for a stored blob, or null when it is missing. */
+export async function blobUrl(deps: Deps, id: string | undefined): Promise<string | null> {
+  if (!id) return null;
+  const blob = await deps.repo.getBlob(id);
+  return blob ? URL.createObjectURL(blob) : null;
 }
