@@ -1,3 +1,4 @@
+import { buildImagePrompt } from '../advice/image-prompt';
 import { neededPaints } from '../advice/parse';
 import { assignUnknownPaint } from '../advice/resolve';
 import type { AdviceEntry, ConsultationResponse, RecipeResponse, ZoneRecipe } from '../advice/schema';
@@ -56,6 +57,21 @@ function consultationView(inv: Inventory, c: ConsultationResponse, unknown: Set<
 }
 
 const NOTES_DEBOUNCE_MS = 800;
+
+/** Unpainted photo underneath, painted image on top clipped from the left by the slider. */
+function compareView(before: string, after: string): HTMLElement {
+  const painted = h('img', { src: after, alt: '', class: 'compare-after', 'data-testid': 'compare-painted' });
+  const slider = h('input', { type: 'range', min: 0, max: 100, value: 50, 'aria-label': copy.project.compareHelp });
+  const clip = () => {
+    painted.style.clipPath = `inset(0 0 0 ${slider.value}%)`;
+  };
+  slider.addEventListener('input', clip);
+  clip();
+  return h('figure', { class: 'compare', 'data-testid': 'compare' },
+    h('div', { class: 'compare-stage' }, h('img', { src: before, alt: '', class: 'compare-before' }), painted),
+    slider,
+    h('figcaption', {}, copy.project.compare));
+}
 
 // All writes from the project screen go through one queue, so two events fired back to back
 // (blur on the notes + tap on "Mark as done") cannot both read the old project and race.
@@ -127,10 +143,24 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
       });
       return select;
     });
+    const imageStatus = h('p', { role: 'status' });
+    const paintBtn = e.response.kind === 'recipe'
+      ? h('button', {
+          'data-testid': 'paint-image',
+          onclick: async () => {
+            const blobId = project.initialPhotoBlobId;
+            const photo = blobId ? await deps.repo.getBlob(blobId) : undefined;
+            if (!photo || e.response.kind !== 'recipe') return;
+            const result = await deps.bridge.send({ text: buildImagePrompt(e.response, inv), image: photo });
+            imageStatus.textContent = result === 'fallback' ? copy.project.paintImageFallback : copy.project.paintImageSent;
+          },
+        }, copy.project.paintImage)
+      : null;
     return h('article', { class: 'card', 'data-entry': e.id },
       h('h3', {}, `${copy.project.advice} · ${e.receivedAt.slice(0, 10)}`),
       h('button', { 'data-testid': 'delete-advice', class: 'secondary', onclick: () => void update((p) => ({ ...p, advice: p.advice.filter((x) => x.id !== e.id) })) }, copy.project.deleteAdvice),
       ...body,
+      ...(paintBtn ? [paintBtn, imageStatus] : []),
       h('div', { 'data-testid': 'needed' }, h('h4', {}, copy.project.needed),
         h('ul', {}, ...neededPaints(e.response).map((r) => h('li', {}, paintLabel(inv, r, unknown))))),
       ...pickers,
@@ -139,7 +169,7 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
 
   show(root,
     h('h2', {}, project.name),
-    photo ? h('img', { src: photo, alt: '', class: 'photo' }) : null,
+    photo && target ? compareView(photo, target) : photo ? h('img', { src: photo, alt: '', class: 'photo' }) : null,
     h('p', {},
       h('a', { href: `#/ask/${encodeURIComponent(project.id)}`, class: 'button' }, copy.project.ask),
       h('button', { 'data-testid': 'toggle-done', onclick: () => void update((p) => (p.status === 'done' ? reopen(p) : markDone(p))) },

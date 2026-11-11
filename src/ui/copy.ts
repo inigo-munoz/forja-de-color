@@ -59,6 +59,11 @@ export const copy = {
     technique: 'Technique',
     seeTechnique: 'See technique card',
     deleteAdvice: 'Delete this advice',
+    paintImage: 'Paint it with ChatGPT',
+    paintImageSent: 'Save the image ChatGPT makes, then add it below with "Set target image".',
+    paintImageFallback: 'Prompt copied and photo downloaded — paste both in ChatGPT, save the image it makes, then add it below with "Set target image".',
+    compare: 'Before / after',
+    compareHelp: 'Drag to compare',
   },
   ask: {
     title: 'Ask the advisor',
