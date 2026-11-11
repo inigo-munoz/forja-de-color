@@ -1,0 +1,36 @@
+:root {
+  color-scheme: dark;
+  --bg: #141218; --panel: #1f1c25; --text: #ece8f1; --muted: #a8a1b3; --accent: #e7b43a; --error: #ff7a6b;
+  font-family: system-ui, sans-serif; font-size: 17px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+a { color: var(--accent); }
+.topbar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; padding: .75rem 1rem; background: var(--panel); position: sticky; top: 0; }
+.topbar nav { display: flex; gap: 1rem; }
+.brand { font-weight: 700; text-decoration: none; }
+main { padding: 1rem; max-width: 46rem; margin: 0 auto; }
+.card, .family { background: var(--panel); border-radius: 12px; padding: 1rem; margin: 0 0 1rem; }
+ul { list-style: none; padding: 0; margin: 0; }
+li { padding: .35rem 0; }
+.swatch { display: inline-block; width: 1.4rem; height: 1.4rem; border-radius: 50%; vertical-align: middle; margin-right: .5rem; border: 1px solid #0006; }
+.code { color: var(--muted); font-variant-numeric: tabular-nums; }
+button, .button, select, input, textarea { font: inherit; }
+button, .button { display: inline-block; min-height: 48px; padding: .6rem 1rem; margin: .25rem .5rem .25rem 0; border-radius: 10px; border: 0; background: var(--accent); color: #1a1408; font-weight: 600; cursor: pointer; }
+.button input[type=file] { display: none; }
+input, select, textarea { width: 100%; min-height: 44px; padding: .5rem; border-radius: 8px; border: 1px solid #ffffff22; background: #0f0d13; color: var(--text); }
+label { display: block; margin: .5rem 0; color: var(--muted); }
+textarea { min-height: 8rem; }
+.banner { background: #4a3a10; padding: .75rem 1rem; border-radius: 10px; }
+.error { color: var(--error); }
+.flag { color: var(--error); font-weight: 600; }
+.markdown { white-space: pre-wrap; font-family: inherit; }
+img.photo { max-width: 100%; border-radius: 10px; }
+.thumbs { display: flex; gap: .5rem; flex-wrap: wrap; }
+.thumbs img { width: 30%; border-radius: 8px; }
+.secondary { background: transparent; color: var(--muted); border: 1px solid #ffffff33; }
+.compare { margin: 0 0 1rem; }
+.compare-stage { position: relative; }
+.compare-stage img { width: 100%; border-radius: 10px; display: block; }
+.compare-after { position: absolute; inset: 0; height: 100%; object-fit: cover; }
+.compare input[type=range] { min-height: 32px; }
