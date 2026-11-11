@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import { vi } from 'vitest';
 import { createProject } from '../projects/project';
 import { exportAll, importAll, shouldRemindBackup } from './backup';
 import { openIndexedDbRepository } from './indexeddb';
@@ -55,5 +56,33 @@ describe('backup', () => {
     expect(shouldRemindBackup(undefined, now)).toBe(true);
     expect(shouldRemindBackup(daysAgo(3), now)).toBe(false);
     expect(shouldRemindBackup(daysAgo(8), now)).toBe(true);
+  });
+});
+
+describe('backup — deep validation', () => {
+  const file = (over: Record<string, unknown>) => ({
+    app: 'forja-de-color', version: 1, exportedAt: '', inventory: { paints: [], brushes: [] }, projects: [], blobs: {}, ...over,
+  });
+
+  it.each([
+    ['a paint without brand', { inventory: { paints: [{ code: '72.003', name: 'x' }], brushes: [] } }],
+    ['a project without progress', { projects: [{ id: 'p', name: 'x', createdAt: '', status: 'in-progress', notes: '', advice: [] }] }],
+    ['a brush without code', { inventory: { paints: [], brushes: [{ name: 'x' }] } }],
+  ])('rejects %s and keeps existing data', async (_label, over) => {
+    const { repo } = await populated();
+    const before = await repo.listProjects();
+    const result = await importAll(repo, file(over));
+    expect(result.ok).toBe(false);
+    expect(await repo.listProjects()).toEqual(before);
+  });
+
+  it('restores in one step, so a failure mid-restore leaves the old data intact', async () => {
+    const { repo } = await populated();
+    const before = await repo.listProjects();
+    const good = JSON.parse(JSON.stringify(await exportAll(repo, now)));
+    vi.spyOn(repo, 'replaceAll').mockRejectedValue(new Error('QuotaExceededError'));
+    const result = await importAll(repo, good);
+    expect(result.ok).toBe(false);
+    expect(await repo.listProjects()).toEqual(before);
   });
 });

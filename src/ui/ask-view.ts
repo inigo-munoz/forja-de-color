@@ -45,6 +45,8 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
 
   const photoInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment' });
   const sendStatus = h('p', { role: 'status' });
+  const promptBox = h('textarea', { 'data-testid': 'prompt', readonly: true, hidden: true });
+  const copyPrompt = h('button', { hidden: true, class: 'secondary', onclick: () => void navigator.clipboard?.writeText(promptBox.value).catch(() => promptBox.select()) }, copy.ask.copyPrompt);
   const errors = h('div', { 'data-testid': 'answer-errors', class: 'error' });
   const answer = h('textarea', { 'data-testid': 'answer', placeholder: copy.ask.pasteHere, hidden: true });
   const saveBtn = h('button', { 'data-testid': 'save-answer', hidden: true }, copy.ask.save);
@@ -56,8 +58,13 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
     const req: AdviceRequest = moment === 'during'
       ? { moment, zone: zoneText.value.trim() || zoneSelect.value, question: question.value as Question, freeText: details.value.trim() || undefined }
       : { moment };
-    const result = await deps.bridge.send(buildAdvicePackage(req, await deps.repo.getInventory(), photo));
-    sendStatus.textContent = result === 'fallback' ? copy.ask.fallback : '';
+    const pkg = buildAdvicePackage(req, await deps.repo.getInventory(), photo);
+    const result = await deps.bridge.send(pkg);
+    const fallback = result === 'fallback';
+    sendStatus.textContent = fallback ? `${copy.ask.fallback} ${copy.ask.promptBox}` : '';
+    promptBox.value = pkg.text;
+    promptBox.hidden = !fallback;
+    copyPrompt.hidden = !fallback;
   };
 
   const accept = async (raw: string) => {
@@ -69,8 +76,16 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
       errors.replaceChildren(h('p', {}, copy.ask.errors), h('ul', {}, ...parsed.errors.map((e) => h('li', {}, e))));
       return;
     }
-    const latest = (await deps.repo.getProject(id)) ?? project;
-    await deps.repo.saveProject(addAdvice(latest, { id: crypto.randomUUID(), receivedAt: deps.now().toISOString(), ...parsed.entry }));
+    try {
+      const latest = (await deps.repo.getProject(id)) ?? project;
+      await deps.repo.saveProject(addAdvice(latest, { id: crypto.randomUUID(), receivedAt: deps.now().toISOString(), ...parsed.entry }));
+    } catch (e) {
+      answer.value = raw;
+      answer.hidden = false;
+      saveBtn.hidden = false;
+      errors.replaceChildren(h('p', {}, copy.ask.errors), h('p', {}, String((e as Error).message ?? e)));
+      return;
+    }
     deps.navigate(`#/project/${encodeURIComponent(id)}`);
   };
 
@@ -93,7 +108,7 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
       duringFields,
       h('label', {}, copy.ask.photo, photoInput),
       h('button', { 'data-testid': 'send', onclick: () => void send() }, copy.ask.send),
-      sendStatus),
+      sendStatus, promptBox, copyPrompt),
     h('section', { class: 'card' },
       h('button', { 'data-testid': 'paste', onclick: () => void paste() }, copy.ask.paste),
       errors, answer, saveBtn),

@@ -105,3 +105,22 @@ describe('ask view', () => {
     expect((await deps.repo.getProject('p1'))?.advice).toHaveLength(1);
   });
 });
+
+describe('ask view — review fixes', () => {
+  it('shows the prompt in a copyable box when the share sheet could not be used', async () => {
+    const { root } = await setup(answer, 'fallback');
+    click(root, 'send');
+    await ticks();
+    const box = root.querySelector<HTMLTextAreaElement>('[data-testid="prompt"]')!;
+    expect(box.hasAttribute('hidden')).toBe(false);
+    expect(box.value).toContain('ANSWER FORMAT');
+  });
+
+  it('shows an error instead of failing silently when saving throws', async () => {
+    const { deps, root } = await setup();
+    vi.spyOn(deps.repo, 'saveProject').mockRejectedValue(new Error('QuotaExceededError'));
+    click(root, 'paste');
+    await ticks();
+    expect(root.querySelector('[data-testid="answer-errors"]')?.textContent).toContain('QuotaExceededError');
+  });
+});

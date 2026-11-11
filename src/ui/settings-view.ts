@@ -1,5 +1,6 @@
 import { buildBrainInstructions } from '../advice/package';
-import { exportAll, importAll, shouldRemindBackup } from '../storage/backup';
+import { readBytes } from '../storage/bytes';
+import { exportAll, importAll, shouldRemindBackup, validateBackup } from '../storage/backup';
 import { copy } from './copy';
 import { download, h, show, type Deps } from './dom';
 
@@ -23,10 +24,14 @@ export async function renderSettings(root: HTMLElement, deps: Deps): Promise<voi
     if (!file) return;
     let parsed: unknown;
     try {
-      parsed = JSON.parse(await file.text());
+      parsed = JSON.parse(new TextDecoder().decode(await readBytes(file)));
     } catch {
       parsed = null;
     }
+    importInput.value = '';
+    const invalid = validateBackup(parsed);
+    if (invalid) return void status.replaceChildren(h('span', { 'data-testid': 'import-error', class: 'error' }, invalid));
+    if (!window.confirm(copy.settings.importConfirm)) return;
     const result = await importAll(deps.repo, parsed);
     status.replaceChildren(
       result.ok ? copy.settings.importOk : h('span', { 'data-testid': 'import-error', class: 'error' }, result.error),

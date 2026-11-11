@@ -18,4 +18,6 @@ export interface Repository {
   getMeta(key: MetaKey): Promise<string | undefined>;
   setMeta(key: MetaKey, value: string): Promise<void>;
   clearAll(): Promise<void>;
+  /** Replaces everything in a single transaction: either all of it is written or nothing changes. */
+  replaceAll(data: { inventory: Inventory; projects: Project[]; blobs: Array<[id: string, blob: Blob]> }): Promise<void>;
 }

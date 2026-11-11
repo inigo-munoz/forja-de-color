@@ -49,13 +49,23 @@ export async function exportAll(repo: Repository, now: Date): Promise<BackupFile
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
-function validateFile(file: unknown): string | null {
+/** Why a file cannot be restored, or null when it is a valid backup. */
+export function validateBackup(file: unknown): string | null {
   if (!isObj(file)) return 'not a backup file';
   if (file.app !== 'forja-de-color') return 'this file is not a Forja de Color backup';
   if (file.version !== 1) return `unsupported backup version: ${String(file.version)}`;
   const inv = file.inventory;
   if (!isObj(inv) || !Array.isArray(inv.paints) || !Array.isArray(inv.brushes)) return 'backup has no valid inventory';
-  if (!Array.isArray(file.projects) || !file.projects.every((p) => isObj(p) && typeof p.id === 'string')) return 'backup has no valid projects';
+  const str = (o: Record<string, unknown>, ...keys: string[]) => keys.every((k) => typeof o[k] === 'string');
+  const badPaint = inv.paints.findIndex((p) => !isObj(p) || !str(p, 'brand', 'code', 'name', 'range', 'type', 'hex'));
+  if (badPaint >= 0) return `paint #${badPaint + 1} needs brand, code, name, range, type and hex`;
+  const badBrush = inv.brushes.findIndex((b) => !isObj(b) || !str(b, 'code', 'name'));
+  if (badBrush >= 0) return `brush #${badBrush + 1} needs code and name`;
+  if (!Array.isArray(file.projects)) return 'backup has no valid projects';
+  const badProject = file.projects.findIndex(
+    (p) => !isObj(p) || !str(p, 'id', 'name', 'createdAt', 'status', 'notes') || !Array.isArray(p.progress) || !Array.isArray(p.advice),
+  );
+  if (badProject >= 0) return `project #${badProject + 1} is incomplete`;
   if (!isObj(file.blobs)) return 'backup has no valid photos';
   for (const b of Object.values(file.blobs)) {
     if (!isObj(b) || typeof b.type !== 'string' || typeof b.base64 !== 'string') return 'backup has a damaged photo';
@@ -65,7 +75,7 @@ function validateFile(file: unknown): string | null {
 
 /** Validates the whole file first; only then replaces everything. */
 export async function importAll(repo: Repository, file: unknown): Promise<{ ok: true } | { ok: false; error: string }> {
-  const error = validateFile(file);
+  const error = validateBackup(file);
   if (error) return { ok: false, error };
   const backup = file as BackupFile;
   let decoded: Array<[string, Blob]>;
@@ -74,10 +84,11 @@ export async function importAll(repo: Repository, file: unknown): Promise<{ ok: 
   } catch {
     return { ok: false, error: 'backup has a damaged photo' };
   }
-  await repo.clearAll();
-  await repo.saveInventory(backup.inventory);
-  for (const p of backup.projects) await repo.saveProject(p);
-  for (const [id, blob] of decoded) await repo.putBlob(blob, id);
+  try {
+    await repo.replaceAll({ inventory: backup.inventory, projects: backup.projects, blobs: decoded });
+  } catch (e) {
+    return { ok: false, error: `could not restore the backup: ${(e as Error).message}` };
+  }
   return { ok: true };
 }
 

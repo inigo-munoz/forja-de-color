@@ -55,24 +55,45 @@ function consultationView(inv: Inventory, c: ConsultationResponse, unknown: Set<
   ];
 }
 
+const NOTES_DEBOUNCE_MS = 800;
+
+// All writes from the project screen go through one queue, so two events fired back to back
+// (blur on the notes + tap on "Mark as done") cannot both read the old project and race.
+let queue: Promise<unknown> = Promise.resolve();
+function serialize(task: () => Promise<void>): Promise<void> {
+  const next = queue.then(task, task);
+  queue = next.catch(() => undefined);
+  return next;
+}
+
 export async function renderProject(root: HTMLElement, deps: Deps, id: string): Promise<void> {
   const project = await deps.repo.getProject(id);
   if (!project) return void show(root, h('p', {}, '404'));
   const inv = await deps.repo.getInventory();
   // Every change re-reads the stored project first, so edits made elsewhere on this screen
   // (notes saved on blur, a picker) are never overwritten by the copy loaded at render time.
-  const update = async (change: (latest: Project) => Project) => {
-    const latest = (await deps.repo.getProject(id)) ?? project;
-    await deps.repo.saveProject(change(latest));
-    await renderProject(root, deps, id);
-  };
+  const update = (change: (latest: Project) => Project, rerender = true) =>
+    serialize(async () => {
+      const latest = (await deps.repo.getProject(id)) ?? project;
+      await deps.repo.saveProject(change(latest));
+      if (rerender) await renderProject(root, deps, id);
+    });
 
   const notes = h('textarea', { 'data-testid': 'notes' });
   notes.value = project.notes;
-  notes.addEventListener('blur', async () => {
-    const latest = (await deps.repo.getProject(id)) ?? project;
-    await deps.repo.saveProject(setNotes(latest, notes.value));
+  // Notes are saved while typing (debounced), on blur, and when the page is hidden, so a
+  // service-worker reload or Android discarding the app cannot lose them.
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const saveNotes = () => {
+    clearTimeout(timer);
+    return update((p) => setNotes(p, notes.value), false);
+  };
+  notes.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => void saveNotes(), NOTES_DEBOUNCE_MS);
   });
+  notes.addEventListener('blur', () => void saveNotes());
+  window.addEventListener('pagehide', () => void saveNotes(), { once: true });
 
   const progressInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment', 'data-testid': 'add-progress' });
   progressInput.addEventListener('change', async () => {
@@ -108,6 +129,7 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
     });
     return h('article', { class: 'card', 'data-entry': e.id },
       h('h3', {}, `${copy.project.advice} · ${e.receivedAt.slice(0, 10)}`),
+      h('button', { 'data-testid': 'delete-advice', class: 'secondary', onclick: () => void update((p) => ({ ...p, advice: p.advice.filter((x) => x.id !== e.id) })) }, copy.project.deleteAdvice),
       ...body,
       h('div', { 'data-testid': 'needed' }, h('h4', {}, copy.project.needed),
         h('ul', {}, ...neededPaints(e.response).map((r) => h('li', {}, paintLabel(inv, r, unknown))))),

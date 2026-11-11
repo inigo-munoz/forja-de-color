@@ -58,6 +58,16 @@ export async function openIndexedDbRepository(dbName = 'forja-de-color'): Promis
     async setMeta(key: MetaKey, value: string) {
       await db.put('meta', value, key);
     },
+    async replaceAll({ inventory, projects, blobs }) {
+      // Read every blob first: an IndexedDB transaction auto-commits across non-IDB awaits.
+      const stored = await Promise.all(blobs.map(async ([id, b]) => [id, { type: b.type, bytes: await readBytes(b) }] as const));
+      const tx = db.transaction([...STORES], 'readwrite');
+      const writes: Promise<unknown>[] = STORES.filter((s) => s !== 'meta').map((s) => tx.objectStore(s).clear());
+      writes.push(tx.objectStore('inventory').put(inventory, 'current'));
+      for (const p of projects) writes.push(tx.objectStore('projects').put(p));
+      for (const [id, b] of stored) writes.push(tx.objectStore('blobs').put(b, id));
+      await Promise.all([...writes, tx.done]);
+    },
     async clearAll() {
       const tx = db.transaction([...STORES], 'readwrite');
       await Promise.all([...STORES.map((s) => tx.objectStore(s).clear()), tx.done]);

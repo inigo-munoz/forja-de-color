@@ -28,3 +28,4 @@ textarea { min-height: 8rem; }
 img.photo { max-width: 100%; border-radius: 10px; }
 .thumbs { display: flex; gap: .5rem; flex-wrap: wrap; }
 .thumbs img { width: 30%; border-radius: 8px; }
+.secondary { background: transparent; color: var(--muted); border: 1px solid #ffffff33; }

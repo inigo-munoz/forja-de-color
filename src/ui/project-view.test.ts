@@ -138,3 +138,40 @@ describe('project view — advice', () => {
     expect(peana?.paint?.code).toBe('72.051');
   });
 });
+
+describe('project view — review fixes', () => {
+  it('deletes an advice entry', async () => {
+    const { deps, root } = await setup();
+    root.querySelector<HTMLButtonElement>('[data-entry="e1"] [data-testid="delete-advice"]')!.click();
+    await ticks();
+    expect((await deps.repo.getProject('p1'))?.advice.map((e) => e.id)).toEqual(['e2']);
+  });
+
+  it('saves notes while typing, without waiting for blur', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { deps, root } = await setup();
+      const notes = root.querySelector<HTMLTextAreaElement>('[data-testid="notes"]')!;
+      notes.value = 'escrito sin salir';
+      notes.dispatchEvent(new Event('input'));
+      await vi.advanceTimersByTimeAsync(1000);
+      vi.useRealTimers();
+      await ticks();
+      expect((await deps.repo.getProject('p1'))?.notes).toBe('escrito sin salir');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps notes when blur and "mark as done" fire back to back', async () => {
+    const { deps, root } = await setup();
+    const notes = root.querySelector<HTMLTextAreaElement>('[data-testid="notes"]')!;
+    notes.value = 'tocar y marcar';
+    notes.dispatchEvent(new Event('blur'));
+    root.querySelector<HTMLButtonElement>('[data-testid="toggle-done"]')!.click();
+    await ticks(20);
+    const p = await deps.repo.getProject('p1');
+    expect(p?.status).toBe('done');
+    expect(p?.notes).toBe('tocar y marcar');
+  });
+});

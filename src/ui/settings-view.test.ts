@@ -72,3 +72,21 @@ describe('technique view', () => {
     expect(root.textContent).toContain('TODO(user): write from the BSL book');
   });
 });
+
+describe('settings view — import confirmation', () => {
+  it('does not import when the user cancels the confirmation', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const root = mount();
+    const deps = await makeDeps();
+    await deps.repo.saveProject(createProject('Bárbara', deps.now(), 'p1'));
+    const valid = JSON.stringify({ app: 'forja-de-color', version: 1, exportedAt: '', inventory: { paints: [], brushes: [] }, projects: [], blobs: {} });
+    await renderSettings(root, deps);
+    const input = root.querySelector<HTMLInputElement>('[data-testid="import"]')!;
+    Object.defineProperty(input, 'files', { value: [new File([valid], 'b.json', { type: 'application/json' })] });
+    input.dispatchEvent(new Event('change'));
+    for (let i = 0; i < 6; i++) await flush();
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(await deps.repo.listProjects()).toHaveLength(1);
+    confirmSpy.mockRestore();
+  });
+});
