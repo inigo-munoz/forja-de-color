@@ -65,6 +65,8 @@ export const copy = {
     paintImageFallback: 'Prompt copied and photo downloaded — paste both in ChatGPT, save the image it makes, then add it below with "Set target image".',
     compare: 'Before / after',
     compareHelp: 'Drag to compare',
+    zoneDone: 'Painted',
+    zoneProgress: (done: number, total: number) => `${done} of ${total} zones`,
   },
   ask: {
     title: 'Ask the advisor',

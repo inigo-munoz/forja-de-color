@@ -44,3 +44,16 @@ export function markDone(p: Project): Project {
 export function reopen(p: Project): Project {
   return { ...p, status: 'in-progress' };
 }
+
+/** Ticks a recipe zone off (or back on); keeps doneZones sorted and unique, and drops it when empty. */
+export function setZoneDone(p: Project, entryId: string, zone: number, done: boolean): Project {
+  const advice = p.advice.map((e) => {
+    if (e.id !== entryId) return e;
+    const zones = new Set(e.doneZones ?? []);
+    if (done) zones.add(zone);
+    else zones.delete(zone);
+    const { doneZones: _old, ...rest } = e;
+    return zones.size ? { ...rest, doneZones: [...zones].sort((a, b) => a - b) } : rest;
+  });
+  return { ...p, advice };
+}

@@ -49,6 +49,21 @@ export async function exportAll(repo: Repository, now: Date): Promise<BackupFile
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
+/** Optional doneZones on an advice entry: distinct integer indices into its recipe's zones. */
+function doneZonesProblem(project: Record<string, unknown>, projectIndex: number): string | null {
+  const advice = project.advice as unknown[];
+  for (let i = 0; i < advice.length; i++) {
+    const entry = advice[i];
+    if (!isObj(entry) || !('doneZones' in entry)) continue;
+    const zones = isObj(entry.response) && Array.isArray(entry.response.zones) ? entry.response.zones.length : 0;
+    const done = entry.doneZones;
+    const valid = Array.isArray(done) && new Set(done).size === done.length &&
+      done.every((z) => Number.isInteger(z) && (z as number) >= 0 && (z as number) < zones);
+    if (!valid) return `project #${projectIndex + 1}, advice #${i + 1} has invalid done zones: each must be a different zone index below ${zones}`;
+  }
+  return null;
+}
+
 /** Why a file cannot be restored, or null when it is a valid backup. */
 export function validateBackup(file: unknown): string | null {
   if (!isObj(file)) return 'not a backup file';
@@ -66,6 +81,8 @@ export function validateBackup(file: unknown): string | null {
     (p) => !isObj(p) || !str(p, 'id', 'name', 'createdAt', 'status', 'notes') || !Array.isArray(p.progress) || !Array.isArray(p.advice),
   );
   if (badProject >= 0) return `project #${badProject + 1} is incomplete`;
+  const doneZonesError = file.projects.map((p, i) => doneZonesProblem(p as Record<string, unknown>, i)).find((e) => e !== null);
+  if (doneZonesError) return doneZonesError;
   if (!isObj(file.blobs)) return 'backup has no valid photos';
   for (const b of Object.values(file.blobs)) {
     if (!isObj(b) || typeof b.type !== 'string' || typeof b.base64 !== 'string') return 'backup has a damaged photo';

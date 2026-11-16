@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto';
 import { vi } from 'vitest';
-import { createProject } from '../projects/project';
-import { exportAll, importAll, shouldRemindBackup } from './backup';
+import type { AdviceEntry } from '../advice/schema';
+import { addAdvice, createProject, setZoneDone } from '../projects/project';
+import { exportAll, importAll, shouldRemindBackup, validateBackup } from './backup';
 import { openIndexedDbRepository } from './indexeddb';
 import { readBytes } from './bytes';
 
@@ -84,5 +85,55 @@ describe('backup — deep validation', () => {
     const result = await importAll(repo, good);
     expect(result.ok).toBe(false);
     expect(await repo.listProjects()).toEqual(before);
+  });
+});
+
+describe('backup — done zones', () => {
+  const zone = { name: 'z', technique: 'slapchop' as const, paint: { brand: 'Vallejo', code: '72.021' }, dilution: '1:1', steps: [] };
+  const entry: AdviceEntry = {
+    id: 'e1', receivedAt: '2026-11-11T10:00:00Z', unknownPaints: [], unknownBrushes: [],
+    response: { version: 1, kind: 'recipe', moment: 'start', prep: [], tips: [], zones: [zone, zone, zone] },
+  };
+  const withDone = (doneZones?: unknown) => ({
+    app: 'forja-de-color', version: 1, exportedAt: '', inventory: { paints: [], brushes: [] }, blobs: {},
+    projects: [{ ...createProject('B', now, 'p1'), advice: [{ id: 'c', receivedAt: '', unknownPaints: [], unknownBrushes: [], response: { kind: 'consultation' } },
+      doneZones === undefined ? entry : { ...entry, doneZones }] }],
+  });
+
+  it('accepts entries without doneZones and with a valid list', () => {
+    expect(validateBackup(withDone())).toBeNull();
+    expect(validateBackup(withDone([0, 2]))).toBeNull();
+    expect(validateBackup(withDone([]))).toBeNull();
+  });
+
+  it.each([
+    ['not a list', 1],
+    ['a non-integer', [1.5]],
+    ['a string', ['1']],
+    ['a negative index', [-1]],
+    ['an index out of range', [3]],
+    ['a duplicate', [1, 1]],
+  ])('rejects %s with a clear message', (_label, doneZones) => {
+    expect(validateBackup(withDone(doneZones))).toBe('project #1, advice #2 has invalid done zones: each must be a different zone index below 3');
+  });
+
+  it('rejects done zones on an entry with no zones', () => {
+    const file = withDone();
+    (file.projects[0].advice[0] as Record<string, unknown>).doneZones = [0];
+    expect(validateBackup(file)).toBe('project #1, advice #1 has invalid done zones: each must be a different zone index below 0');
+  });
+
+  it('exports doneZones only when some zone is done, and round-trips it', async () => {
+    const repo = await fresh();
+    await repo.saveProject(addAdvice(createProject('B', now, 'p1'), entry));
+    const plain = JSON.parse(JSON.stringify(await exportAll(repo, now)));
+    expect('doneZones' in plain.projects[0].advice[0]).toBe(false);
+
+    await repo.saveProject(setZoneDone((await repo.getProject('p1'))!, 'e1', 1, true));
+    const file = JSON.parse(JSON.stringify(await exportAll(repo, now)));
+    expect(file.projects[0].advice[0].doneZones).toEqual([1]);
+    await repo.clearAll();
+    expect(await importAll(repo, file)).toEqual({ ok: true });
+    expect((await repo.getProject('p1'))?.advice[0].doneZones).toEqual([1]);
   });
 });

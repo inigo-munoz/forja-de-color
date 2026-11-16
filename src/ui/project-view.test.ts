@@ -175,3 +175,35 @@ describe('project view — review fixes', () => {
     expect(p?.notes).toBe('tocar y marcar');
   });
 });
+
+describe('project view — zone progress', () => {
+  it('ticks a zone off, dims it, updates the progress and keeps it after reload', async () => {
+    const { deps, root } = await setup();
+    expect(root.querySelector('[data-testid="zone_progress"]')?.textContent).toBe('0 of 4 zones');
+    const box = root.querySelector<HTMLInputElement>('[data-entry="e1"] [data-testid="zone_done_1"]')!;
+    expect(box.checked).toBe(false);
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    await ticks();
+    expect((await deps.repo.getProject('p1'))?.advice[0].doneZones).toEqual([1]);
+    expect(root.querySelector('[data-testid="zone_progress"]')?.textContent).toBe('1 of 4 zones');
+
+    const reloaded = mount();
+    await renderProject(reloaded, deps, 'p1');
+    expect(reloaded.querySelector<HTMLInputElement>('[data-testid="zone_done_1"]')?.checked).toBe(true);
+    expect(reloaded.querySelector<HTMLElement>('[data-zone="cara"]')?.classList.contains('zone-done')).toBe(true);
+    expect(reloaded.querySelector<HTMLElement>('[data-zone="capa"]')?.classList.contains('zone-done')).toBe(false);
+    expect(reloaded.querySelector('[data-zone="cara"]')?.textContent).toContain('cara');
+
+    const again = reloaded.querySelector<HTMLInputElement>('[data-testid="zone_done_1"]')!;
+    again.checked = false;
+    again.dispatchEvent(new Event('change'));
+    await ticks();
+    expect((await deps.repo.getProject('p1'))?.advice[0].doneZones).toBeUndefined();
+  });
+
+  it('shows no zone checkboxes on a consultation', async () => {
+    const { root } = await setup();
+    expect(root.querySelector('[data-entry="e2"] [data-testid^="zone_done_"]')).toBeNull();
+  });
+});
