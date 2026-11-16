@@ -68,7 +68,7 @@ export const copy = {
   ask: {
     title: 'Ask the advisor',
     moment: 'Moment',
-    moments: { start: 'Start', 'half-painted': 'Half-painted', during: 'While painting' },
+    moments: { start: 'Start', primed: 'Primed and drybrushed', 'half-painted': 'Half-painted', during: 'While painting' },
     zone: 'Zone',
     question: 'What do you need?',
     questions: {

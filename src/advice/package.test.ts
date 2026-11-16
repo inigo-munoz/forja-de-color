@@ -27,6 +27,16 @@ describe('buildAdvicePackage', () => {
     expect(half.text).toContain('"moment": "half-painted"');
   });
 
+  it('asks for a recipe without prep for a primed and drybrushed miniature', () => {
+    const primed = buildAdvicePackage({ moment: 'primed' }, SEED_INVENTORY, photo);
+    expect(primed.text).toContain('MOMENT: primed.');
+    expect(primed.text).toContain('already primed');
+    expect(primed.text).toContain('"kind": "recipe"');
+    expect(primed.text).toContain('"moment": "primed"');
+    expect(primed.text).toContain('"prep": []');
+    expect(primed.text).not.toContain('"complements"');
+  });
+
   it('asks for a consultation about the zone and question while painting', () => {
     const during = buildAdvicePackage({ moment: 'during', zone: 'capa', question: 'highlight' }, SEED_INVENTORY, photo);
     expect(during.text).toContain('"kind": "consultation"');
@@ -54,5 +64,6 @@ describe('buildBrainInstructions', () => {
     expect(brain).toContain('"version": 1');
     expect(brain).toContain('72.003');
     expect(brain).not.toContain('MOMENT:');
+    expect(brain).toContain('start, primed, half-painted or during');
   });
 });

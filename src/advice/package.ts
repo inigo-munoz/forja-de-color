@@ -9,12 +9,12 @@ METHOD
 - Rules: only use paints and brushes from this inventory; cite them by brand and code. Never invent paints. Do not repeat the same paint needlessly.
 - Write every human-readable text (zone names, steps, tips) in Spanish.`;
 
-const RECIPE_FORMAT = (moment: 'start' | 'half-painted') => `ANSWER FORMAT: reply with JSON only, in one \`\`\`json block, exactly this shape:
+const RECIPE_FORMAT = (moment: 'start' | 'primed' | 'half-painted') => `ANSWER FORMAT: reply with JSON only, in one \`\`\`json block, exactly this shape:
 {
   "version": 1,
   "kind": "recipe",
   "moment": "${moment}",
-  "prep": ["step", "..."],
+  "prep": ${moment === 'primed' ? '[]' : '["step", "..."]'},
   "zones": [
     { "name": "zone", "technique": "slapchop", "paint": { "brand": "Vallejo", "code": "72.021" }, "dilution": "1:3", "steps": ["..."], "brush": "B02001" },
     { "name": "zone", "technique": "bsl", "bsl": { "base": { "brand": "Vallejo", "code": "72.099" }, "shadow": { "brand": "Vallejo", "code": "72.071" }, "light": { "brand": "Vallejo", "code": "72.098" } }, "steps": ["..."] }
@@ -50,6 +50,8 @@ function momentRequest(req: AdviceRequest): string {
   switch (req.moment) {
     case 'start':
       return 'MOMENT: start. The photo shows an unpainted miniature. Give me a palette by zones.';
+    case 'primed':
+      return 'MOMENT: primed. The photo shows my miniature already primed in black with the grey and white drybrush done. Skip priming and drybrushing (leave prep empty) and give me a palette by zones, starting from the colour layers.';
     case 'half-painted':
       return 'MOMENT: half-painted. The photo shows my miniature partly painted. Say which zones are already painted, propose complementary colours and the steps left to finish it.';
     case 'during':
@@ -68,7 +70,7 @@ export function buildBrainInstructions(inv: Inventory): string {
   return [
     METHOD,
     inventoryLines(inv),
-    'When I send a photo I will say the moment (start, half-painted or during). For start and half-painted answer with this format:',
+    'When I send a photo I will say the moment (start, primed, half-painted or during). For start, primed and half-painted answer with this format (for primed, leave prep empty):',
     RECIPE_FORMAT('start'),
     'For during answer with this format:',
     CONSULTATION_FORMAT,
