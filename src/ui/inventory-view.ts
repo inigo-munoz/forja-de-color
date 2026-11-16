@@ -1,4 +1,4 @@
-import { addPaint } from '../paints/inventory';
+import { addPaint, findPaint } from '../paints/inventory';
 import type { Paint, PaintType } from '../paints/paint';
 import { copy } from './copy';
 import { h, show, swatch, type Deps } from './dom';
@@ -42,7 +42,8 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
       type: (get('type') || 'opaque') as PaintType, hex: get('hex').toLowerCase(),
     };
     const current = await deps.repo.getInventory();
-    const prior = current.paints.find((p) => p.brand.toLowerCase() === paint.brand.toLowerCase() && p.code === paint.code);
+    // Same lookup as addPaint (normalized code), so "72003" finds 72.003 and keeps its BSL family.
+    const prior = findPaint(current, paint);
     await deps.repo.saveInventory(addPaint(current, prior?.family ? { ...paint, family: prior.family } : paint));
     await renderInventory(root, deps);
   });

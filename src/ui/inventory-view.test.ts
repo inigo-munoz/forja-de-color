@@ -34,4 +34,18 @@ describe('inventory view', () => {
     expect(inv.paints).toHaveLength(48);
     expect(inv.paints.find((p) => p.code === '72.003')?.name).toBe('Carne Pálida (renombrada)');
   });
+
+  it('keeps the BSL family when the code is typed without the dot', async () => {
+    const root = mount();
+    const deps = await makeDeps();
+    const before = (await deps.repo.getInventory()).paints.find((p) => p.code === '72.003')!.family;
+    await renderInventory(root, deps);
+    const form = root.querySelector<HTMLFormElement>('[data-testid="add-paint"]')!;
+    const set = (name: string, value: string) => ((form.elements.namedItem(name) as HTMLInputElement).value = value);
+    set('brand', 'Vallejo'); set('code', '72003'); set('name', 'Carne Pálida'); set('range', 'Game Color'); set('hex', '#c9a47f');
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush(); await flush();
+    expect(before).toBeDefined();
+    expect((await deps.repo.getInventory()).paints.find((p) => p.code === '72.003')?.family).toEqual(before);
+  });
 });
