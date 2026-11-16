@@ -5,7 +5,7 @@ import type { AdviceEntry, ConsultationResponse, RecipeResponse, ZoneRecipe } fr
 import { findPaint } from '../paints/inventory';
 import type { Inventory, PaintRef } from '../paints/paint';
 import { paintKey } from '../paints/paint';
-import { addProgressPhoto, markDone, reopen, setNotes, type Project } from '../projects/project';
+import { addProgressPhoto, markDone, reopen, setNotes, setZoneDone, type Project } from '../projects/project';
 import { copy } from './copy';
 import { blobUrl, h, show, swatch, type Deps } from './dom';
 import { storePhoto } from './photos';
@@ -22,24 +22,32 @@ function list(items: string[]): HTMLElement {
   return h('ol', {}, ...items.map((s) => h('li', {}, s)));
 }
 
-function zoneView(inv: Inventory, z: ZoneRecipe, unknown: Set<string>): HTMLElement {
+/** Ticks a zone off as painted (true) or back on (false). */
+type ZoneToggle = (index: number, done: boolean) => void;
+
+function zoneView(inv: Inventory, z: ZoneRecipe, unknown: Set<string>, index: number, done: boolean, onToggle: ZoneToggle): HTMLElement {
   const paints =
     z.technique === 'bsl' && z.bsl
       ? h('div', {}, ...(['base', 'shadow', 'light'] as const).map((role) => h('div', {}, `${role}: `, paintLabel(inv, z.bsl![role], unknown))))
       : z.paint
         ? h('div', {}, paintLabel(inv, z.paint, unknown), z.dilution ? h('strong', {}, ` · ${z.dilution}`) : null)
         : null;
-  return h('section', { 'data-zone': z.name, class: 'zone' },
-    h('h4', {}, `${z.name} · ${z.technique === 'bsl' ? 'BSL' : 'Slapchop'}`, z.alreadyPainted ? h('em', {}, ` (${copy.project.alreadyPainted})`) : null),
+  const box = h('input', { type: 'checkbox', 'data-testid': `zone_done_${index}`, 'aria-label': copy.project.zoneDone, checked: done });
+  box.addEventListener('change', () => onToggle(index, box.checked));
+  // A done zone stays readable, only dimmed.
+  return h('section', { 'data-zone': z.name, class: done ? 'zone zone-done' : 'zone', style: done ? 'opacity:0.55' : undefined },
+    h('h4', {}, box, ` ${z.name} · ${z.technique === 'bsl' ? 'BSL' : 'Slapchop'}`, z.alreadyPainted ? h('em', {}, ` (${copy.project.alreadyPainted})`) : null),
     paints,
     z.brush ? h('div', { class: 'code' }, `🖌 ${z.brush}`) : null,
     list(z.steps));
 }
 
-function recipeView(inv: Inventory, r: RecipeResponse, unknown: Set<string>): HTMLElement[] {
+function recipeView(inv: Inventory, r: RecipeResponse, unknown: Set<string>, doneZones: number[], onToggle: ZoneToggle): HTMLElement[] {
+  const done = new Set(doneZones);
   return [
     h('h4', {}, copy.project.prep), list(r.prep),
-    ...r.zones.map((z) => zoneView(inv, z, unknown)),
+    h('p', { 'data-testid': 'zone_progress' }, copy.project.zoneProgress(r.zones.filter((_, i) => done.has(i)).length, r.zones.length)),
+    ...r.zones.map((z, i) => zoneView(inv, z, unknown, i, done.has(i), onToggle)),
     r.complements?.length ? h('div', {}, h('h4', {}, copy.project.complements), h('ul', {}, ...r.complements.map((c) => h('li', {}, paintLabel(inv, c, unknown))))) : null,
     r.remainingSteps?.length ? h('div', {}, h('h4', {}, copy.project.remaining), list(r.remainingSteps)) : null,
     h('h4', {}, copy.project.tips), list(r.tips),
@@ -131,7 +139,10 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
 
   const entryView = (e: AdviceEntry) => {
     const unknown = new Set(e.unknownPaints.map(paintKey));
-    const body = e.response.kind === 'recipe' ? recipeView(inv, e.response, unknown) : consultationView(inv, e.response, unknown);
+    const toggleZone: ZoneToggle = (index, done) => void update((p) => setZoneDone(p, e.id, index, done));
+    const body = e.response.kind === 'recipe'
+      ? recipeView(inv, e.response, unknown, e.doneZones ?? [], toggleZone)
+      : consultationView(inv, e.response, unknown);
     const pickers = e.unknownPaints.map((u) => {
       const select = h('select', { 'data-testid': 'assign' },
         h('option', { value: '' }, `${copy.project.assign}: ${u.brand} ${u.code}`),

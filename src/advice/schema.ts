@@ -50,6 +50,8 @@ export interface AdviceEntry {
   response: AdviceResponse;
   unknownPaints: PaintRef[];
   unknownBrushes: string[];
+  /** Recipes only: indices into response.zones the user ticked off as painted, sorted and unique. Absent when none. */
+  doneZones?: number[];
 }
 
 export interface AdviceRequest {

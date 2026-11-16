@@ -1,5 +1,5 @@
 import type { AdviceEntry } from '../advice/schema';
-import { addAdvice, addProgressPhoto, createProject, markDone, reopen, setNotes } from './project';
+import { addAdvice, addProgressPhoto, createProject, markDone, reopen, setNotes, setZoneDone } from './project';
 
 const now = new Date('2026-11-11T10:00:00Z');
 
@@ -40,5 +40,17 @@ describe('project', () => {
     }).not.toThrow();
     expect(p.notes).toBe('');
     expect(p.status).toBe('in-progress');
+  });
+
+  it('marks recipe zones done as a sorted, unique list and drops the field when none are left', () => {
+    const entry = { id: 'e1' } as AdviceEntry;
+    let p = addAdvice(createProject('B', now, 'p1'), entry);
+    p = setZoneDone(p, 'e1', 2, true);
+    p = setZoneDone(p, 'e1', 0, true);
+    p = setZoneDone(p, 'e1', 2, true);
+    expect(p.advice[0].doneZones).toEqual([0, 2]);
+    p = setZoneDone(setZoneDone(p, 'e1', 0, false), 'e1', 2, false);
+    expect('doneZones' in p.advice[0]).toBe(false);
+    expect(entry).toEqual({ id: 'e1' });
   });
 });
