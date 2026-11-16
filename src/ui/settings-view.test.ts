@@ -69,7 +69,7 @@ describe('technique view', () => {
     const root = mount();
     await renderTechnique(root, await makeDeps(), 'slapchop');
     expect(root.textContent).toContain('Slapchop');
-    expect(root.textContent).toContain('TODO(user): write from the BSL book');
+    expect(root.textContent).toContain('Grey drybrush');
   });
 });
 
