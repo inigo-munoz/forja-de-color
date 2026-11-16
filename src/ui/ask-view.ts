@@ -6,7 +6,7 @@ import { addAdvice, type Project } from '../projects/project';
 import { copy } from './copy';
 import { h, show, type Deps } from './dom';
 
-const MOMENTS: Moment[] = ['start', 'half-painted', 'during'];
+const MOMENTS: Moment[] = ['start', 'primed', 'half-painted', 'during'];
 const QUESTIONS = Object.keys(copy.ask.questions) as Question[];
 
 function recipeZones(p: Project): string[] {

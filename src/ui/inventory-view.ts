@@ -1,5 +1,6 @@
-import { addPaint } from '../paints/inventory';
+import { addPaint, findPaint } from '../paints/inventory';
 import type { Paint, PaintType } from '../paints/paint';
+import { bslRole } from '../paints/roles';
 import { copy } from './copy';
 import { h, show, swatch, type Deps } from './dom';
 
@@ -13,8 +14,11 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
     if (p.family) families.set(p.family.name, [...(families.get(p.family.name) ?? []), p]);
     else others.push(p);
   }
-  const row = (p: Paint) =>
-    h('li', { 'data-testid': 'paint', class: 'paint-row' }, swatch(p.hex), h('span', { class: 'code' }, p.code), ` ${p.name}`);
+  const row = (p: Paint) => {
+    const role = bslRole(p);
+    return h('li', { 'data-testid': 'paint', class: 'paint-row' }, swatch(p.hex), h('span', { class: 'code' }, p.code), ` ${p.name}`,
+      role ? ' · ' : null, role ? h('span', { 'data-testid': 'role', class: 'code' }, copy.inventory.roles[role]) : null);
+  };
 
   const groups = [...families.entries()].map(([name, paints]) =>
     h('section', { 'data-family': name, class: 'family' },
@@ -42,7 +46,8 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
       type: (get('type') || 'opaque') as PaintType, hex: get('hex').toLowerCase(),
     };
     const current = await deps.repo.getInventory();
-    const prior = current.paints.find((p) => p.brand.toLowerCase() === paint.brand.toLowerCase() && p.code === paint.code);
+    // Same lookup as addPaint (normalized code), so "72003" finds 72.003 and keeps its BSL family.
+    const prior = findPaint(current, paint);
     await deps.repo.saveInventory(addPaint(current, prior?.family ? { ...paint, family: prior.family } : paint));
     await renderInventory(root, deps);
   });

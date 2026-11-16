@@ -1,6 +1,6 @@
 import type { PaintRef } from '../paints/paint';
 
-export type Moment = 'start' | 'half-painted' | 'during';
+export type Moment = 'start' | 'primed' | 'half-painted' | 'during';
 export type Question = 'apply-layer' | 'light' | 'shadow' | 'highlight' | 'which-technique' | 'free';
 export type TechniqueCardId = 'slapchop' | 'dilution' | 'bsl' | 'drybrush';
 
@@ -20,7 +20,8 @@ export interface ZoneRecipe {
 export interface RecipeResponse {
   version: 1;
   kind: 'recipe';
-  moment: 'start' | 'half-painted';
+  moment: 'start' | 'primed' | 'half-painted';
+  /** Empty for primed: the miniature is already primed and drybrushed. */
   prep: string[];
   zones: ZoneRecipe[];
   tips: string[];

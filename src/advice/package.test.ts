@@ -27,6 +27,16 @@ describe('buildAdvicePackage', () => {
     expect(half.text).toContain('"moment": "half-painted"');
   });
 
+  it('asks for a recipe without prep for a primed and drybrushed miniature', () => {
+    const primed = buildAdvicePackage({ moment: 'primed' }, SEED_INVENTORY, photo);
+    expect(primed.text).toContain('MOMENT: primed.');
+    expect(primed.text).toContain('already primed');
+    expect(primed.text).toContain('"kind": "recipe"');
+    expect(primed.text).toContain('"moment": "primed"');
+    expect(primed.text).toContain('"prep": []');
+    expect(primed.text).not.toContain('"complements"');
+  });
+
   it('asks for a consultation about the zone and question while painting', () => {
     const during = buildAdvicePackage({ moment: 'during', zone: 'capa', question: 'highlight' }, SEED_INVENTORY, photo);
     expect(during.text).toContain('"kind": "consultation"');
@@ -36,6 +46,25 @@ describe('buildAdvicePackage', () => {
 
   it('restricts the answer to the inventory, cited by brand and code', () => {
     expect(start.text).toContain('only use paints and brushes from this inventory; cite them by brand and code');
+  });
+
+  it('sends each paint\'s BSL role as the last inventory column', () => {
+    expect(start.text).toContain('INVENTORY (brand|code|name|family|order|role)');
+    expect(start.text).toContain('Vallejo|72.020|Azul Imperial|BSL Blue|3|base');
+    expect(start.text).toContain('Vallejo|72.019|Azul Negro|BSL Blue|4|shadow');
+    expect(start.text).toContain('Vallejo|72.021|Azul Mágico|BSL Blue|2|light');
+    expect(start.text).toContain('Vallejo|72.118|Azul Amanecer|BSL Blue|1|extra light');
+    expect(start.text).toContain('Vallejo|72.011|Rojo Visceral|BSL Multipurpose|1|\n');
+  });
+
+  it('fills the role from the seed for a stored inventory without roles', () => {
+    const bare = { ...SEED_INVENTORY, paints: SEED_INVENTORY.paints.map((p) => ({ ...p, family: p.family && { name: p.family.name, order: p.family.order } })) };
+    expect(buildAdvicePackage({ moment: 'start' }, bare, photo).text).toBe(start.text);
+  });
+
+  it('tells the AI to use the BSL paints by their role', () => {
+    expect(start.text).toContain('For a BSL zone use the family\'s base, shadow and light paints by their role');
+    expect(buildBrainInstructions(SEED_INVENTORY)).toContain('|role)');
   });
 
   it('stays under 8000 characters with the seed inventory', () => {
@@ -54,5 +83,6 @@ describe('buildBrainInstructions', () => {
     expect(brain).toContain('"version": 1');
     expect(brain).toContain('72.003');
     expect(brain).not.toContain('MOMENT:');
+    expect(brain).toContain('start, primed, half-painted or during');
   });
 });

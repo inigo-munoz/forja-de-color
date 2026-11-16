@@ -1,9 +1,9 @@
-import type { Inventory, Paint } from './paint';
+import type { BslRole, Inventory, Paint } from './paint';
 
 // The Vallejo Game Color BSL set the user owns: 12 families × 4, each listed lightest → darkest
 // as printed on the box. Names come from the user's list; display colours were sampled once by
 // hand from Vallejo's published colour chart (kept outside the repo) and are approximate. BSL roles (base / shadow
-// / light / fourth) are pending until confirmed from the user's book.
+// / light / fourth) come from the user's BSL book.
 const FAMILIES: Array<[family: string, paints: Array<[code: string, name: string, hex: string]>]> = [
   ['BSL Warm Flesh', [['72.003', 'Carne Pálida', '#c9a47f'], ['72.100', 'Carne Rosada', '#e58a6b'], ['72.107', 'Piel de Atenea', '#c85c53'], ['72.108', 'Piel de Súcubo', '#923d45']]],
   ['BSL Flesh', [['72.098', 'Carne Élfica', '#ebd7b9'], ['72.099', 'Piel', '#e3ac86'], ['72.004', 'Piel de Elfo', '#cb8854'], ['72.071', 'Piel de Bárbaro', '#926640']]],
@@ -19,16 +19,26 @@ const FAMILIES: Array<[family: string, paints: Array<[code: string, name: string
   ['BSL Multipurpose', [['72.011', 'Rojo Visceral', '#7d201f'], ['72.042', 'Piel de Parásitos', '#a35e1c'], ['72.124', 'Marrón Gargona', '#592f22'], ['72.045', 'Marrón Carbonizado', '#442b26']]],
 ];
 
+// Roles by position (lightest → darkest). BSL Green has no shadow paint; BSL Multipurpose has no roles.
+const USUAL_ROLES: BslRole[] = ['fourth', 'light', 'base', 'shadow'];
+const ROLES: Record<string, BslRole[]> = {
+  'BSL Green': ['fourth', 'light', 'light', 'base'],
+  'BSL Multipurpose': [],
+};
+
 const paints: Paint[] = FAMILIES.flatMap(([family, entries]) =>
-  entries.map(([code, name, hex], i) => ({
-    brand: 'Vallejo',
-    code,
-    name,
-    range: 'Game Color',
-    type: 'opaque' as const,
-    hex,
-    family: { name: family, order: (i + 1) as 1 | 2 | 3 | 4 },
-  })),
+  entries.map(([code, name, hex], i) => {
+    const role = (ROLES[family] ?? USUAL_ROLES)[i];
+    return {
+      brand: 'Vallejo',
+      code,
+      name,
+      range: 'Game Color',
+      type: 'opaque' as const,
+      hex,
+      family: { name: family, order: (i + 1) as 1 | 2 | 3 | 4, ...(role ? { role } : {}) },
+    };
+  }),
 );
 
 export const SEED_INVENTORY: Inventory = {

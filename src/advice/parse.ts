@@ -45,7 +45,7 @@ function validate(data: unknown): string[] {
   if (data.version !== 1) return [`unsupported version: ${String(data.version)}`];
   const errors: string[] = [];
   if (data.kind === 'recipe') {
-    if (data.moment !== 'start' && data.moment !== 'half-painted') errors.push('recipe: moment must be "start" or "half-painted"');
+    if (data.moment !== 'start' && data.moment !== 'primed' && data.moment !== 'half-painted') errors.push('recipe: moment must be "start", "primed" or "half-painted"');
     if (!isStrArray(data.prep)) errors.push('recipe: prep must be a list of steps');
     if (!isStrArray(data.tips)) errors.push('recipe: tips must be a list');
     if (!Array.isArray(data.zones) || data.zones.length === 0) errors.push('recipe: zones must be a non-empty list');

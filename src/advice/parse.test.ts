@@ -19,6 +19,12 @@ describe('parseAdviceResponse — extraction', () => {
     expect(parse(recipe([slap('72.021')])).ok).toBe(true);
   });
 
+  it('accepts a primed recipe with no prep steps', () => {
+    const r = parse(recipe([slap('72.021')], { moment: 'primed', prep: [] }));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.entry.response.kind === 'recipe' && r.entry.response.moment).toBe('primed');
+  });
+
   it('rejects text with no JSON', () => {
     const r = parseAdviceResponse('Lo siento, no puedo ayudar.', SEED_INVENTORY);
     expect(r.ok).toBe(false);

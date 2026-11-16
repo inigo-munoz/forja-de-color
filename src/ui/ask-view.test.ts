@@ -34,10 +34,10 @@ const choose = (root: HTMLElement, moment: string) => {
 };
 
 describe('ask view', () => {
-  it('offers the three moments', async () => {
+  it('offers the four moments, primed right after start', async () => {
     const { root } = await setup();
     const values = [...root.querySelectorAll<HTMLInputElement>('input[name="moment"]')].map((r) => r.value);
-    expect(values).toEqual(['start', 'half-painted', 'during']);
+    expect(values).toEqual(['start', 'primed', 'half-painted', 'during']);
   });
 
   it('asks zone and question only while painting, offering the recipe zones', async () => {

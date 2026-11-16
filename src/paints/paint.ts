@@ -11,7 +11,7 @@ export interface PaintFamily {
   name: string;
   /** 1 = lightest … 4 = darkest, as printed on the BSL set. */
   order: 1 | 2 | 3 | 4;
-  /** Pending: confirmed from the user's BSL book, may be absent. */
+  /** From the user's BSL book; absent for families without roles. Read it through bslRole. */
   role?: BslRole;
 }
 
