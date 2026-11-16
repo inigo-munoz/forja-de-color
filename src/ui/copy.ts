@@ -14,6 +14,7 @@ export const copy = {
     type: 'Type',
     hex: 'Colour',
     add: 'Save paint',
+    roles: { base: 'base', shadow: 'shadow', light: 'light', fourth: 'extra light' },
   },
   settings: {
     title: 'Settings',

@@ -1,4 +1,5 @@
-import type { Inventory } from '../paints/paint';
+import type { BslRole, Inventory } from '../paints/paint';
+import { bslRole } from '../paints/roles';
 import type { AdvicePackage, AdviceRequest } from './schema';
 
 const METHOD = `You are my miniature painting assistant. I paint fast but want a good-looking result.
@@ -6,6 +7,7 @@ METHOD
 - Default technique is Slapchop: black primer, then a heavy grey drybrush and a lighter white drybrush to sketch light and shadow, then translucent colour on top.
 - I have no translucent paints: make them by thinning my opaque paints. Every Slapchop zone needs a dilution ratio "N:M" (paint:medium or water), e.g. "1:3".
 - Use BSL (base, shadow, light) triads only on detail zones: faces, skin, focal points. Prefer the BSL families listed below; each family is ordered 1 (lightest) to 4 (darkest).
+- For a BSL zone use the family's base, shadow and light paints by their role (extra light for final highlights); a family without a shadow paint is shaded by glazing its base.
 - Rules: only use paints and brushes from this inventory; cite them by brand and code. Never invent paints. Do not repeat the same paint needlessly.
 - Write every human-readable text (zone names, steps, tips) in Spanish.`;
 
@@ -38,12 +40,15 @@ const CONSULTATION_FORMAT = `ANSWER FORMAT: reply with JSON only, in one \`\`\`j
   "techniqueCard": "slapchop | dilution | bsl | drybrush"
 }`;
 
+const ROLE_WORDS: Record<BslRole, string> = { base: 'base', shadow: 'shadow', light: 'light', fourth: 'extra light' };
+
 function inventoryLines(inv: Inventory): string {
-  const paints = inv.paints.map((p) =>
-    [p.brand, p.code, p.name, p.family?.name ?? p.range, p.family?.order ?? ''].join('|'),
-  );
+  const paints = inv.paints.map((p) => {
+    const role = bslRole(p);
+    return [p.brand, p.code, p.name, p.family?.name ?? p.range, p.family?.order ?? '', role ? ROLE_WORDS[role] : ''].join('|');
+  });
   const brushes = inv.brushes.map((b) => `brush|${b.code}|${b.name}`);
-  return ['INVENTORY (brand|code|name|family|order)', ...paints, ...brushes].join('\n');
+  return ['INVENTORY (brand|code|name|family|order|role)', ...paints, ...brushes].join('\n');
 }
 
 function momentRequest(req: AdviceRequest): string {

@@ -1,5 +1,6 @@
 import { addPaint, findPaint } from '../paints/inventory';
 import type { Paint, PaintType } from '../paints/paint';
+import { bslRole } from '../paints/roles';
 import { copy } from './copy';
 import { h, show, swatch, type Deps } from './dom';
 
@@ -13,8 +14,11 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
     if (p.family) families.set(p.family.name, [...(families.get(p.family.name) ?? []), p]);
     else others.push(p);
   }
-  const row = (p: Paint) =>
-    h('li', { 'data-testid': 'paint', class: 'paint-row' }, swatch(p.hex), h('span', { class: 'code' }, p.code), ` ${p.name}`);
+  const row = (p: Paint) => {
+    const role = bslRole(p);
+    return h('li', { 'data-testid': 'paint', class: 'paint-row' }, swatch(p.hex), h('span', { class: 'code' }, p.code), ` ${p.name}`,
+      role ? ' · ' : null, role ? h('span', { 'data-testid': 'role', class: 'code' }, copy.inventory.roles[role]) : null);
+  };
 
   const groups = [...families.entries()].map(([name, paints]) =>
     h('section', { 'data-family': name, class: 'family' },

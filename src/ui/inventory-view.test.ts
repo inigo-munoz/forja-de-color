@@ -14,6 +14,15 @@ describe('inventory view', () => {
     expect(black.querySelector('[data-testid="swatch"]')).not.toBeNull();
   });
 
+  it('shows the BSL role next to each paint in a family', async () => {
+    const root = mount();
+    await renderInventory(root, await makeDeps());
+    const blue = root.querySelector('[data-family="BSL Blue"]')!;
+    const roles = [...blue.querySelectorAll('[data-testid="role"]')].map((r) => r.textContent);
+    expect(roles).toEqual(['extra light', 'light', 'base', 'shadow']);
+    expect(root.querySelector('[data-family="BSL Multipurpose"] [data-testid="role"]')).toBeNull();
+  });
+
   it('lists the brushes', async () => {
     const root = mount();
     await renderInventory(root, await makeDeps());
