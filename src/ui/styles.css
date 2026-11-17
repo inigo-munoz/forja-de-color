@@ -49,3 +49,5 @@ img.photo { max-width: 100%; border-radius: 10px; }
 .scan-row .hint { flex-basis: 100%; margin: 0; }
 .catalogue-results { list-style: none; padding: 0; margin: 0 0 .5rem; }
 .catalogue-result { display: flex; align-items: center; gap: .4rem; width: 100%; text-align: left; }
+.delete-paint { min-height: 36px; padding: .2rem .6rem; margin-left: auto; font-size: .85rem; }
+.paint-row { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }

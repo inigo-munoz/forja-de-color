@@ -64,6 +64,8 @@ export const copy = {
     otherPaints: 'Other paints',
     mediums: 'Mediums',
     nameEn: 'English name',
+    delete: 'Delete',
+    deleteConfirm: 'Delete this paint from your inventory? Projects that use it will show it as not in your paints.',
     catalogueSearch: 'Search the catalogue (code or name)',
     setResult: (code: string, name: string, n: number) => `Set ${code} · ${name} · ${n} paints`,
     alreadyOwned: (name: string, code: string) => `You already have it: ${name} (${code})`,
