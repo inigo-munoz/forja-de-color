@@ -148,4 +148,18 @@ describe('add from a photo', () => {
     const saved = findPaint(await deps.repo.getInventory(), { brand: 'Vallejo', code: '72.010' })!;
     expect([saved.name, saved.nameEn, saved.hex, saved.range]).toEqual(['Rojo Sanguina', 'Bloody Red', '#d41c1c', 'Game Color']);
   });
+
+  it('a set opens straight as a list to confirm, with the paints already owned unticked', async () => {
+    const deps = await makeDeps();
+    const root = mount();
+    await renderScan(root, deps, '72.212');
+    expect(root.querySelector('[data-testid="scan-list"]')).not.toBeNull();
+    const ticked = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => $<HTMLInputElement>(root, `scan-paint-include-${i}`).checked);
+    expect(ticked).toEqual([false, false, false, true, false, true, true, true]);
+    $(root, 'scan-save').click();
+    await ticks();
+    const codes = (await deps.repo.getInventory()).paints.map((p) => p.code);
+    expect(codes.length).toBe(52);
+    expect(['72.050', '72.091', '72.151', '72.153'].every((c) => codes.includes(c))).toBe(true);
+  });
 });

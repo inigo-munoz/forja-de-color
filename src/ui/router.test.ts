@@ -9,6 +9,7 @@ describe('parseRoute', () => {
     ['#/inventory', { name: 'inventory' }],
     ['#/settings', { name: 'settings' }],
     ['#/scan', { name: 'scan' }],
+    ['#/scan/72.212', { name: 'scan', set: '72.212' }],
     ['#/wheel', { name: 'wheel' }],
     ['#/wheel/red', { name: 'wheel', colour: 'red' }],
     ['#/wheel/nope', { name: 'wheel' }],

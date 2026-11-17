@@ -159,4 +159,15 @@ describe('inventory view', () => {
     const saved = (await deps.repo.getInventory()).paints.find((p) => p.code === '72.010')!;
     expect([saved.name, saved.nameEn]).toEqual(['Rojo Sanguina', 'Bloody Red']);
   });
+
+  it('the catalogue search also offers sets, which open as a list to confirm', async () => {
+    const root = mount();
+    await renderInventory(root, await makeDeps());
+    const search = root.querySelector<HTMLInputElement>('[data-testid="catalogue-search"]')!;
+    search.value = '72212';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    const set = root.querySelector<HTMLAnchorElement>('[data-testid="catalogue-set-0"]')!;
+    expect(set.textContent).toContain('Non-Metallic Metal');
+    expect(set.getAttribute('href')).toBe('#/scan/72.212');
+  });
 });

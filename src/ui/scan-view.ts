@@ -3,6 +3,7 @@ import { findBrush, findPaint } from '../paints/inventory';
 import { resizeImage } from '../platform/image';
 import { applyScan, buildScanPrompt, checkInCatalogue, isComplete, parseScanAnswer } from '../scan/scan';
 import { displayName } from '../paints/names';
+import { findSet, setAsScan } from '../paints/sets';
 import { copy } from './copy';
 import { h, show, swatch, type Deps } from './dom';
 
@@ -17,9 +18,10 @@ const alreadyText = (mine: Paint | Brush) =>
 /**
  * Adds paints and brushes from a photo: 1. the photo, 2. send it to the AI with the scan instructions,
  * 3. paste the answer. The list it reads waits for the user to tick, correct or discard each item;
- * only "Add to my paints" writes the inventory. Same flow as the Android app.
+ * only "Add to my paints" writes the inventory. Same flow as the Android app. With setCode (#/scan/72.212)
+ * the list of that set opens straight away, its paints already owned unticked.
  */
-export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
+export async function renderScan(root: HTMLElement, deps: Deps, setCode?: string): Promise<void> {
   const c = copy.scan;
   const photoInput = h('input', { type: 'file', accept: 'image/*', 'data-testid': 'scan-photo' });
   const status = h('p', { role: 'status', 'data-testid': 'scan-status' });
@@ -153,6 +155,15 @@ export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
           saveBtn)),
     );
   };
+
+  const set = setCode ? findSet(setCode) : undefined;
+  if (set) {
+    const list = setAsScan(set, await deps.repo.getInventory());
+    return confirmList(
+      list.paints.map((s) => ({ paint: s.paint, included: isComplete(s.paint) && !s.existing, fromCatalogue: s.fromCatalogue })),
+      [],
+    );
+  }
 
   show(root,
     h('h2', {}, c.title),

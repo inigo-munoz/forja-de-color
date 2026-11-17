@@ -13,7 +13,7 @@ export type Route =
   | { name: 'project'; id: string }
   | { name: 'ask'; id: string }
   | { name: 'inventory' }
-  | { name: 'scan' }
+  | { name: 'scan'; set?: string }
   | { name: 'wheel'; colour?: WheelColour }
   | { name: 'settings' }
   | { name: 'technique'; id: CardId };
@@ -21,7 +21,8 @@ export type Route =
 export function parseRoute(hash: string): Route {
   const [, name, id] = hash.replace(/^#\/?/, '/').split('/');
   if ((name === 'project' || name === 'ask') && id) return { name, id: decodeURIComponent(id) };
-  if (name === 'inventory' || name === 'settings' || name === 'scan') return { name };
+  if (name === 'scan') return id ? { name, set: decodeURIComponent(id) } : { name };
+  if (name === 'inventory' || name === 'settings') return { name };
   if (name === 'wheel') return isWheelColour(id) ? { name, colour: id } : { name };
   if (name === 'technique' && (CARD_IDS as readonly string[]).includes(id)) return { name, id: id as CardId };
   return { name: 'projects' };
@@ -57,7 +58,7 @@ export function startRouter(app: HTMLElement, deps: Omit<Deps, 'navigate'>, view
       case 'project': return views.project(main, full, route.id);
       case 'ask': return views.ask(main, full, route.id);
       case 'inventory': return renderInventory(main, full);
-      case 'scan': return renderScan(main, full);
+      case 'scan': return renderScan(main, full, route.set);
       case 'wheel': return renderWheel(main, full, route.colour);
       case 'settings': return renderSettings(main, full);
       case 'technique': return renderTechnique(main, full, route.id);

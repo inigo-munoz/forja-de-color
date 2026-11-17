@@ -65,6 +65,7 @@ export const copy = {
     mediums: 'Mediums',
     nameEn: 'English name',
     catalogueSearch: 'Search the catalogue (code or name)',
+    setResult: (code: string, name: string, n: number) => `Set ${code} · ${name} · ${n} paints`,
     alreadyOwned: (name: string, code: string) => `You already have it: ${name} (${code})`,
     addTitle: 'Add or update a paint',
     brand: 'Brand',

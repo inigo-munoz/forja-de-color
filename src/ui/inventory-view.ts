@@ -1,5 +1,6 @@
 import { addBrush, findPaint, savePaintKeepingFamily } from '../paints/inventory';
 import { paintFromCatalogue, searchCatalogue } from '../paints/catalogue';
+import { searchSets } from '../paints/sets';
 import { displayName } from '../paints/names';
 import type { Paint, PaintType } from '../paints/paint';
 import { bslRole } from '../paints/roles';
@@ -45,8 +46,14 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
     form.dispatchEvent(new Event('input'));
   };
   search.addEventListener('input', () => {
-    const found = search.value.trim().length < 2 ? [] : searchCatalogue(search.value, 8);
-    results.replaceChildren(...found.map((e, i) => h('li', {}, h('button', {
+    const short = search.value.trim().length < 2;
+    const found = short ? [] : searchCatalogue(search.value, 8);
+    const sets = short ? [] : searchSets(search.value);
+    results.replaceChildren(
+      ...sets.map((set, i) => h('li', {}, h('a', {
+        href: `#/scan/${set.code}`, class: 'button secondary catalogue-result', 'data-testid': `catalogue-set-${i}`,
+      }, copy.inventory.setResult(set.code, set.name, set.paints.length)))),
+      ...found.map((e, i) => h('li', {}, h('button', {
       type: 'button', class: 'secondary catalogue-result', 'data-testid': `catalogue-result-${i}`,
       onclick: () => { fill(paintFromCatalogue(e)); search.value = ''; results.replaceChildren(); },
     }, swatch(e.hex), h('span', { class: 'code' }, `${e.brand} ${e.code}`), ` ${e.nameEn} · ${e.range}`))));
