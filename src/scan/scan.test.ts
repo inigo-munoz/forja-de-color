@@ -93,6 +93,12 @@ describe('saving a scan', () => {
     expect(updated.paints).toEqual([{ ...owned, name: 'Dead White' }]);
   });
 
+  it('updating a paint without an English name keeps the one it had', () => {
+    const named: Inventory = { ...inv, paints: [{ ...owned, nameEn: 'My own name' }] };
+    expect(savePaintKeepingFamily(named, { ...owned, name: 'Renamed', family: undefined }).paints[0].nameEn).toBe('My own name');
+    expect(savePaintKeepingFamily(named, { ...owned, nameEn: 'New name' }).paints[0].nameEn).toBe('New name');
+  });
+
   it('a brush with an existing code is updated, a new one is added', () => {
     const updated = addBrush(addBrush(inv, { code: ' 2 ', name: 'Round kolinsky' }), { code: '0', name: 'Detail' });
     expect(updated.brushes).toEqual([{ code: '2', name: 'Round kolinsky' }, { code: '0', name: 'Detail' }]);

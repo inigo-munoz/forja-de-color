@@ -128,4 +128,14 @@ describe('inventory view', () => {
     await flush(); await flush();
     expect((await deps.repo.getInventory()).paints.find((p) => p.code === '72.999')?.nameEn).toBe('Brand New');
   });
+
+  it('shows the seed English name for a stored paint without one, without saving it', async () => {
+    const deps = await makeDeps();
+    const inv = await deps.repo.getInventory();
+    await deps.repo.saveInventory({ ...inv, paints: inv.paints.map(({ nameEn: _n, ...p }) => p) });
+    const root = mount();
+    await renderInventory(root, deps);
+    expect(root.textContent).toContain('Blanco Calavera · Dead White');
+    expect(JSON.stringify(await deps.repo.getInventory())).not.toContain('nameEn');
+  });
 });
