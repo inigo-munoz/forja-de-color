@@ -61,6 +61,7 @@ export const copy = {
     title: 'My paints',
     brushes: 'Brushes',
     otherPaints: 'Other paints',
+    mediums: 'Mediums',
     addTitle: 'Add or update a paint',
     brand: 'Brand',
     code: 'Code',

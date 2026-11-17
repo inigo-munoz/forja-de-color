@@ -1,3 +1,4 @@
+import type { Paint } from '../paints/paint';
 import { renderInventory } from './inventory-view';
 import { flush, makeDeps, mount } from './test-helpers';
 
@@ -81,5 +82,19 @@ describe('inventory view', () => {
     const root = mount();
     await renderInventory(root, await makeDeps());
     expect(root.querySelector('[data-testid="scan-paints"]')!.getAttribute('href')).toBe('#/scan');
+  });
+
+  it('groups other paints by colour in wheel order, then neutrals and mediums, with BSL families apart', async () => {
+    const deps = await makeDeps();
+    const seed = await deps.repo.getInventory();
+    const p = (code: string, name: string, hex: string, type: Paint['type'] = 'opaque'): Paint => ({ brand: 'Citadel', code, name, range: 'Base', type, hex });
+    await deps.repo.saveInventory({ paints: [seed.paints[0], p('g1', 'Moss', '#2e6b2e'), p('r1', 'Scarlet', '#b01c1c'), p('m1', 'Lahmian Medium', '#ffffff', 'medium'), p('k1', 'Abaddon Black', '#141414')], brushes: [] });
+    const root = mount();
+    await renderInventory(root, deps);
+    const groups = [...root.querySelectorAll<HTMLElement>('[data-testid="other-paints"] [data-colour]')];
+    expect(groups.map((g) => g.dataset.colour)).toEqual(['red', 'green', 'neutrals', 'mediums']);
+    expect(groups[0].querySelector('h4')!.textContent).toBe('Red');
+    expect(groups[0].textContent).toContain('Scarlet');
+    expect(root.querySelector(`[data-family="${seed.paints[0].family!.name}"]`)!.textContent).toContain(seed.paints[0].name);
   });
 });

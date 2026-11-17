@@ -1,8 +1,12 @@
 import { addBrush, savePaintKeepingFamily } from '../paints/inventory';
 import type { Paint, PaintType } from '../paints/paint';
 import { bslRole } from '../paints/roles';
+import { groupByColour, type ColourGroup } from '../paints/wheel';
 import { copy } from './copy';
 import { h, show, swatch, type Deps } from './dom';
+
+const groupLabel = (g: ColourGroup) =>
+  g === 'neutrals' ? copy.wheel.neutrals : g === 'mediums' ? copy.inventory.mediums : copy.wheel.colours[g];
 
 const TYPES: PaintType[] = ['opaque', 'wash', 'metallic', 'medium', 'primer', 'other'];
 
@@ -69,7 +73,10 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
     h('h2', {}, copy.inventory.title),
     h('p', {}, h('a', { href: '#/scan', class: 'button', 'data-testid': 'scan-paints' }, copy.inventory.scan)),
     ...groups,
-    others.length ? h('section', { class: 'family' }, h('h3', {}, copy.inventory.otherPaints), h('ul', {}, ...others.map(row))) : null,
+    // Paints outside a BSL set, grouped by colour with the colour wheel's rule.
+    others.length ? h('section', { class: 'family', 'data-testid': 'other-paints' }, h('h3', {}, copy.inventory.otherPaints),
+      ...groupByColour(others).map(([group, paints]) => h('div', { 'data-colour': group },
+        h('h4', {}, groupLabel(group)), h('ul', {}, ...paints.map(row))))) : null,
     h('section', { class: 'family' }, h('h3', {}, copy.inventory.brushes),
       h('ul', {}, ...inv.brushes.map((b) => h('li', { 'data-testid': 'brush' }, h('span', { class: 'code' }, b.code), ` ${b.name}`)))),
     form,

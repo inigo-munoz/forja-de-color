@@ -86,3 +86,21 @@ export function placeOnWheel(paints: Paint[]): WheelPaints {
   }
   return { paintsOf: (c) => coloured.get(c) ?? [], neutrals };
 }
+
+/** A group of paints in "My paints": one wheel colour, the neutrals, or the mediums. */
+export type ColourGroup = WheelColour | 'neutrals' | 'mediums';
+
+/**
+ * Paints grouped by where they fall on the wheel (wheelColourOf, the same rule as the colour wheel),
+ * in wheel order, then the neutrals (greys, black, white, metallics), then the mediums, which are not
+ * colours. Empty groups are left out and each group keeps the paints' order. Same as the Android app.
+ */
+export function groupByColour(paints: Paint[]): [ColourGroup, Paint[]][] {
+  const wheel = placeOnWheel(paints);
+  const all: [ColourGroup, Paint[]][] = [
+    ...WHEEL.map((c): [ColourGroup, Paint[]] => [c, wheel.paintsOf(c)]),
+    ['neutrals', wheel.neutrals],
+    ['mediums', paints.filter((p) => p.type === 'medium')],
+  ];
+  return all.filter(([, list]) => list.length > 0);
+}

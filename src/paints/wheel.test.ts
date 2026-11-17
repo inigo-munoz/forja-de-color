@@ -1,5 +1,5 @@
 import type { Paint, PaintType } from './paint';
-import { analogous, complementary, kindOf, placeOnWheel, triad, wheelColourOf } from './wheel';
+import { analogous, complementary, groupByColour, kindOf, placeOnWheel, triad, wheelColourOf } from './wheel';
 
 const paint = (code: string, hex: string, type: PaintType = 'opaque'): Paint => ({
   brand: 'Vallejo', code, name: code, range: 'Model Color', type, hex,
@@ -51,5 +51,22 @@ describe('colour wheel', () => {
     expect(wheel.paintsOf('green')).toEqual([green]);
     expect(wheel.paintsOf('blue')).toEqual([]);
     expect(wheel.neutrals).toEqual([black, gold]);
+  });
+
+  it('groups paints by wheel colour in wheel order, then neutrals, then mediums, skipping empty groups', () => {
+    const green = paint('70.890', '#2e6b2e');
+    const red = paint('70.926', '#b01c1c');
+    const black = paint('70.950', '#141414');
+    const medium = paint('70.470', '#ffffff', 'medium');
+    const wash = paint('73.200', '#c81e1e', 'wash');
+    const gold = paint('70.996', '#d4af37', 'metallic');
+
+    expect(groupByColour([green, red, black, medium, wash, gold])).toEqual([
+      ['red', [red, wash]],
+      ['green', [green]],
+      ['neutrals', [black, gold]],
+      ['mediums', [medium]],
+    ]);
+    expect(groupByColour([])).toEqual([]);
   });
 });
