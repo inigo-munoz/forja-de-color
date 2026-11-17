@@ -138,4 +138,36 @@ describe('inventory view', () => {
     expect(root.textContent).toContain('Blanco Calavera · Dead White');
     expect(JSON.stringify(await deps.repo.getInventory())).not.toContain('nameEn');
   });
+
+  it('searching the catalogue fills the add form with the chosen paint, still editable', async () => {
+    const root = mount();
+    const deps = await makeDeps();
+    await renderInventory(root, deps);
+    const search = root.querySelector<HTMLInputElement>('[data-testid="catalogue-search"]')!;
+    search.value = '72010';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    const first = root.querySelector<HTMLButtonElement>('[data-testid="catalogue-result-0"]')!;
+    expect(first.textContent).toContain('Bloody Red');
+    first.click();
+
+    const form = root.querySelector<HTMLFormElement>('[data-testid="add-paint"]')!;
+    const value = (n: string) => (form.elements.namedItem(n) as HTMLInputElement).value;
+    expect(['brand', 'code', 'name', 'nameEn', 'range', 'type', 'hex'].map(value)).toEqual(['Vallejo', '72.010', 'Bloody Red', 'Bloody Red', 'Game Color', 'opaque', '#d41c1c']);
+    (form.elements.namedItem('name') as HTMLInputElement).value = 'Rojo Sanguina';
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush(); await flush();
+    const saved = (await deps.repo.getInventory()).paints.find((p) => p.code === '72.010')!;
+    expect([saved.name, saved.nameEn]).toEqual(['Rojo Sanguina', 'Bloody Red']);
+  });
+
+  it('the catalogue search also offers sets, which open as a list to confirm', async () => {
+    const root = mount();
+    await renderInventory(root, await makeDeps());
+    const search = root.querySelector<HTMLInputElement>('[data-testid="catalogue-search"]')!;
+    search.value = '72212';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    const set = root.querySelector<HTMLAnchorElement>('[data-testid="catalogue-set-0"]')!;
+    expect(set.textContent).toContain('Non-Metallic Metal');
+    expect(set.getAttribute('href')).toBe('#/scan/72.212');
+  });
 });

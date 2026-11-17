@@ -1,4 +1,6 @@
 import { addBrush, findPaint, savePaintKeepingFamily } from '../paints/inventory';
+import { paintFromCatalogue, searchCatalogue } from '../paints/catalogue';
+import { searchSets } from '../paints/sets';
 import { displayName } from '../paints/names';
 import type { Paint, PaintType } from '../paints/paint';
 import { bslRole } from '../paints/roles';
@@ -9,7 +11,7 @@ import { h, show, swatch, type Deps } from './dom';
 const groupLabel = (g: ColourGroup) =>
   g === 'neutrals' ? copy.wheel.neutrals : g === 'mediums' ? copy.inventory.mediums : copy.wheel.colours[g];
 
-const TYPES: PaintType[] = ['opaque', 'wash', 'metallic', 'medium', 'primer', 'other'];
+const TYPES: PaintType[] = ['opaque', 'wash', 'ink', 'metallic', 'medium', 'primer', 'other'];
 
 export async function renderInventory(root: HTMLElement, deps: Deps): Promise<void> {
   const inv = await deps.repo.getInventory();
@@ -34,8 +36,32 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
   const field = (name: string, label: string, attrs: Record<string, string> = {}) =>
     h('label', {}, label, h('input', { name, required: 'true', ...attrs }));
   const alreadyOwned = h('p', { class: 'error', 'data-testid': 'already-owned', hidden: true });
+  // Search box over the paint catalogue; picking a result fills the form, which stays editable.
+  const search = h('input', { 'data-testid': 'catalogue-search', placeholder: copy.inventory.catalogueSearch, 'aria-label': copy.inventory.catalogueSearch });
+  const results = h('ul', { class: 'catalogue-results' });
+  const fill = (p: Paint) => {
+    const set = (n: string, v: string) => ((form.elements.namedItem(n) as HTMLInputElement).value = v);
+    set('brand', p.brand); set('code', p.code); set('name', p.name); set('nameEn', p.nameEn ?? '');
+    set('range', p.range); set('type', p.type); set('hex', p.hex);
+    form.dispatchEvent(new Event('input'));
+  };
+  search.addEventListener('input', () => {
+    const short = search.value.trim().length < 2;
+    const found = short ? [] : searchCatalogue(search.value, 8);
+    const sets = short ? [] : searchSets(search.value);
+    results.replaceChildren(
+      ...sets.map((set, i) => h('li', {}, h('a', {
+        href: `#/scan/${set.code}`, class: 'button secondary catalogue-result', 'data-testid': `catalogue-set-${i}`,
+      }, copy.inventory.setResult(set.code, set.name, set.paints.length)))),
+      ...found.map((e, i) => h('li', {}, h('button', {
+      type: 'button', class: 'secondary catalogue-result', 'data-testid': `catalogue-result-${i}`,
+      onclick: () => { fill(paintFromCatalogue(e)); search.value = ''; results.replaceChildren(); },
+    }, swatch(e.hex), h('span', { class: 'code' }, `${e.brand} ${e.code}`), ` ${e.nameEn} · ${e.range}`))));
+  });
+
   const form = h('form', { 'data-testid': 'add-paint', class: 'card' },
     h('h3', {}, copy.inventory.addTitle),
+    search, results,
     field('brand', copy.inventory.brand, { value: 'Vallejo' }),
     field('code', copy.inventory.code),
     alreadyOwned,

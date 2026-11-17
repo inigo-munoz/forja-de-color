@@ -1,4 +1,4 @@
-export type PaintType = 'opaque' | 'wash' | 'metallic' | 'medium' | 'primer' | 'other';
+export type PaintType = 'opaque' | 'wash' | 'ink' | 'metallic' | 'medium' | 'primer' | 'other';
 export type BslRole = 'base' | 'shadow' | 'light' | 'fourth';
 
 /** Identifies a paint. `code` is always stored normalized (see normalizeCode). */
