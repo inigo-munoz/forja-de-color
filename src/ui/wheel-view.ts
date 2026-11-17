@@ -1,5 +1,6 @@
 import type { Paint } from '../paints/paint';
 import { analogous, complementary, kindOf, placeOnWheel, triad, WHEEL, type WheelColour, type WheelPaints } from '../paints/wheel';
+import { displayName } from '../paints/names';
 import { copy } from './copy';
 import { h, show, swatch, type Deps } from './dom';
 
@@ -58,7 +59,7 @@ function wheelSvg(selected: WheelColour | undefined, onSelect: (c: WheelColour) 
 
 function paintList(paints: Paint[]): HTMLElement {
   if (!paints.length) return h('p', { class: 'hint', 'data-testid': 'no-paints' }, copy.wheel.noPaints);
-  return h('ul', {}, ...paints.map((p) => h('li', { class: 'paint-row' }, swatch(p.hex), h('span', { class: 'code' }, p.code), ` ${p.name}`)));
+  return h('ul', {}, ...paints.map((p) => h('li', { class: 'paint-row' }, swatch(p.hex), h('span', { class: 'code' }, p.code), ` ${displayName(p)}`)));
 }
 
 function colourHeading(c: WheelColour): HTMLElement {

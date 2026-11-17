@@ -62,6 +62,8 @@ export const copy = {
     brushes: 'Brushes',
     otherPaints: 'Other paints',
     mediums: 'Mediums',
+    nameEn: 'English name',
+    alreadyOwned: (name: string, code: string) => `You already have it: ${name} (${code})`,
     addTitle: 'Add or update a paint',
     brand: 'Brand',
     code: 'Code',
