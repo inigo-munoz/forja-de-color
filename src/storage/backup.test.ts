@@ -169,4 +169,15 @@ describe('backup — done zones', () => {
     const p = (await repo.getProject('p1'))!;
     expect([p.style, p.baseSetting]).toEqual(['vivid', 'fantasy']);
   });
+
+  it('rejects null and wrong-case looks, and a rejected import leaves the data unchanged', async () => {
+    for (const look of [{ style: null }, { baseSetting: null }, { style: 'NMM' }, { baseSetting: '' }]) {
+      expect(validateBackup(withLook(look))).toBe('project #1 has an unknown painting style or base setting');
+    }
+    const repo = await fresh();
+    await repo.saveProject(setLook(createProject('Keep', now, 'k1'), { style: 'osl', baseSetting: 'winter' }));
+    const before = JSON.stringify(await exportAll(repo, now));
+    expect(await importAll(repo, withLook({ style: 'cel' }))).toEqual({ ok: false, error: 'project #1 has an unknown painting style or base setting' });
+    expect(JSON.stringify(await exportAll(repo, now))).toBe(before);
+  });
 });
