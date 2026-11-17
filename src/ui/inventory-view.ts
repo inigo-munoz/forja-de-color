@@ -1,4 +1,4 @@
-import { addPaint, findPaint } from '../paints/inventory';
+import { addBrush, savePaintKeepingFamily } from '../paints/inventory';
 import type { Paint, PaintType } from '../paints/paint';
 import { bslRole } from '../paints/roles';
 import { copy } from './copy';
@@ -45,19 +45,34 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
       brand: get('brand'), code: get('code'), name: get('name'), range: get('range'),
       type: (get('type') || 'opaque') as PaintType, hex: get('hex').toLowerCase(),
     };
-    const current = await deps.repo.getInventory();
     // Same lookup as addPaint (normalized code), so "72003" finds 72.003 and keeps its BSL family.
-    const prior = findPaint(current, paint);
-    await deps.repo.saveInventory(addPaint(current, prior?.family ? { ...paint, family: prior.family } : paint));
+    await deps.repo.saveInventory(savePaintKeepingFamily(await deps.repo.getInventory(), paint));
+    await renderInventory(root, deps);
+  });
+
+  const brushForm = h('form', { 'data-testid': 'add-brush', class: 'card' },
+    h('h3', {}, copy.inventory.brushTitle),
+    field('code', copy.inventory.brushCode),
+    field('name', copy.inventory.brushName),
+    h('button', { type: 'submit' }, copy.inventory.addBrush),
+  );
+  brushForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const get = (n: string) => (brushForm.elements.namedItem(n) as HTMLInputElement).value.trim();
+    if (!get('code') || !get('name')) return;
+    // An existing code updates that brush instead of adding another.
+    await deps.repo.saveInventory(addBrush(await deps.repo.getInventory(), { code: get('code'), name: get('name') }));
     await renderInventory(root, deps);
   });
 
   show(root, 
     h('h2', {}, copy.inventory.title),
+    h('p', {}, h('a', { href: '#/scan', class: 'button', 'data-testid': 'scan-paints' }, copy.inventory.scan)),
     ...groups,
     others.length ? h('section', { class: 'family' }, h('h3', {}, copy.inventory.otherPaints), h('ul', {}, ...others.map(row))) : null,
     h('section', { class: 'family' }, h('h3', {}, copy.inventory.brushes),
       h('ul', {}, ...inv.brushes.map((b) => h('li', { 'data-testid': 'brush' }, h('span', { class: 'code' }, b.code), ` ${b.name}`)))),
     form,
+    brushForm,
   );
 }
