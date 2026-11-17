@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { vi } from 'vitest';
 import type { AdviceEntry } from '../advice/schema';
-import { addAdvice, createProject, setZoneDone } from '../projects/project';
+import { addAdvice, createProject, setLook, setZoneDone } from '../projects/project';
 import { exportAll, importAll, shouldRemindBackup, validateBackup } from './backup';
 import { openIndexedDbRepository } from './indexeddb';
 import { readBytes } from './bytes';
@@ -135,5 +135,49 @@ describe('backup — done zones', () => {
     await repo.clearAll();
     expect(await importAll(repo, file)).toEqual({ ok: true });
     expect((await repo.getProject('p1'))?.advice[0].doneZones).toEqual([1]);
+  });
+
+  const withLook = (look: Record<string, unknown>) => ({
+    app: 'forja-de-color', version: 1, exportedAt: '', inventory: { paints: [], brushes: [] }, blobs: {},
+    projects: [{ ...createProject('B', now, 'p1'), ...look }],
+  });
+
+  it('accepts projects without a style and with a known style and base setting', () => {
+    expect(validateBackup(withLook({}))).toBeNull();
+    expect(validateBackup(withLook({ style: 'osl', baseSetting: 'desert' }))).toBeNull();
+  });
+
+  it.each([
+    [{ style: 'cel-shading' }],
+    [{ style: 3 }],
+    [{ baseSetting: 'jungle' }],
+  ])('rejects an unknown style or base setting: %o', (look) => {
+    expect(validateBackup(withLook(look))).toBe('project #1 has an unknown painting style or base setting');
+  });
+
+  it('exports the style only when one is chosen, and round-trips it', async () => {
+    const repo = await fresh();
+    await repo.saveProject(createProject('B', now, 'p1'));
+    const plain = JSON.parse(JSON.stringify(await exportAll(repo, now)));
+    expect('style' in plain.projects[0]).toBe(false);
+    expect('baseSetting' in plain.projects[0]).toBe(false);
+
+    await repo.saveProject(setLook((await repo.getProject('p1'))!, { style: 'vivid', baseSetting: 'fantasy' }));
+    const file = JSON.parse(JSON.stringify(await exportAll(repo, now)));
+    await repo.clearAll();
+    expect(await importAll(repo, file)).toEqual({ ok: true });
+    const p = (await repo.getProject('p1'))!;
+    expect([p.style, p.baseSetting]).toEqual(['vivid', 'fantasy']);
+  });
+
+  it('rejects null and wrong-case looks, and a rejected import leaves the data unchanged', async () => {
+    for (const look of [{ style: null }, { baseSetting: null }, { style: 'NMM' }, { baseSetting: '' }]) {
+      expect(validateBackup(withLook(look))).toBe('project #1 has an unknown painting style or base setting');
+    }
+    const repo = await fresh();
+    await repo.saveProject(setLook(createProject('Keep', now, 'k1'), { style: 'osl', baseSetting: 'winter' }));
+    const before = JSON.stringify(await exportAll(repo, now));
+    expect(await importAll(repo, withLook({ style: 'cel' }))).toEqual({ ok: false, error: 'project #1 has an unknown painting style or base setting' });
+    expect(JSON.stringify(await exportAll(repo, now))).toBe(before);
   });
 });
