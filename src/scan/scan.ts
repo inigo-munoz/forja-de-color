@@ -1,4 +1,5 @@
 import { extractJson } from '../advice/parse';
+import { lookUpInCatalogue } from '../paints/catalogue';
 import { addBrush, findBrush, findPaint, savePaintKeepingFamily } from '../paints/inventory';
 import { normalizeCode, paintKey, type Brush, type Inventory, type Paint, type PaintType } from '../paints/paint';
 
@@ -43,8 +44,11 @@ export function buildScanPrompt(): string {
   ].join('\n');
 }
 
-/** A paint read from the photo; existing is the owned paint it would update, if any. */
-export interface ScannedPaint { paint: Paint; existing?: Paint }
+/**
+ * A paint read from the photo; existing is the owned paint it would update, if any; fromCatalogue when
+ * its data comes from the paint catalogue rather than the AI.
+ */
+export interface ScannedPaint { paint: Paint; existing?: Paint; fromCatalogue?: boolean }
 /** A brush read from the photo; existing is the owned brush it would update, if any. */
 export interface ScannedBrush { brush: Brush; existing?: Brush }
 
@@ -132,4 +136,16 @@ export function isComplete(p: Paint): boolean {
 export function applyScan(inv: Inventory, paints: Paint[], brushes: Brush[]): Inventory {
   const withPaints = paints.filter(isComplete).reduce(savePaintKeepingFamily, inv);
   return brushes.filter((b) => b.code.trim() && b.name.trim()).reduce(addBrush, withPaints);
+}
+
+/**
+ * Looks every scanned paint up in the catalogue first (lookUpInCatalogue): found ones take the
+ * catalogue's data and are flagged; owned paints are found again with the corrected codes, and two rows
+ * that turn out to be the same paint are kept once.
+ */
+export function checkInCatalogue(result: Extract<ScanResult, { ok: true }>, inv: Inventory): Extract<ScanResult, { ok: true }> {
+  const checked = result.paints.map((s) => lookUpInCatalogue(s.paint));
+  const paints = distinctBy(checked, ({ paint }) => (paint.code ? paintKey(paint) : `name:${paint.brand}|${paint.name}`))
+    .map(({ paint, fromCatalogue }) => ({ paint, fromCatalogue, existing: paint.code ? findPaint(inv, paint) : undefined }));
+  return { ...result, paints };
 }

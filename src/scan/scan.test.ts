@@ -1,6 +1,6 @@
 import { addBrush, savePaintKeepingFamily } from '../paints/inventory';
 import type { Inventory, Paint } from '../paints/paint';
-import { MAX_SCAN_ANSWER_CHARS, applyScan, buildScanPrompt, parseScanAnswer, type ScanResult } from './scan';
+import { MAX_SCAN_ANSWER_CHARS, applyScan, buildScanPrompt, checkInCatalogue, parseScanAnswer, type ScanResult } from './scan';
 
 const owned: Paint = { brand: 'Vallejo', code: '72.001', name: 'Blanco Calavera', range: 'Game Color', type: 'opaque', hex: '#ffffff', family: { name: 'BSL Black', order: 1 } };
 const inv: Inventory = { paints: [owned], brushes: [{ code: '2', name: 'Round' }] };
@@ -84,6 +84,25 @@ describe('scan answer', () => {
   it('keeps at most the first 200 paints', () => {
     const paints = Array.from({ length: 250 }, (_, i) => `{"brand": "Vallejo", "code": "70.${101 + i}", "name": "P${i + 1}"}`).join(',');
     expect(success(`{"version": 1, "kind": "inventory", "paints": [${paints}]}`).paints).toHaveLength(200);
+  });
+});
+
+describe('checking a scan in the catalogue', () => {
+  it('fills catalogue data, flags it, marks owned paints again and drops paints that turn out the same', () => {
+    const r = checkInCatalogue(success(`{"version": 1, "kind": "inventory", "paints": [
+      {"brand": "Vallejo", "code": "72010", "nameEs": "Rojo Sanguina", "nameEn": "Blood Red", "hex": "#ff0000"},
+      {"brand": "Vallejo", "code": "", "nameEn": "Dead White"},
+      {"brand": "Vallejo", "code": "72.001", "nameEn": "Dead White"},
+      {"brand": "Scale75", "code": "SC-01", "name": "Black", "hex": "#111111"}
+    ], "brushes": [{"code": "0", "name": "Detail"}]}`), inv);
+    expect(r.paints.map((p) => [p.paint.code, p.paint.name, p.fromCatalogue])).toEqual([
+      ['72.010', 'Rojo Sanguina', true],
+      ['72.001', 'Blanco Calavera', true],
+      ['SC-01', 'Black', false],
+    ]);
+    expect(r.paints[0].paint).toMatchObject({ nameEn: 'Bloody Red', hex: '#d41c1c', range: 'Game Color' });
+    expect(r.paints[1].existing).toEqual(owned);
+    expect(r.brushes).toHaveLength(1);
   });
 });
 
