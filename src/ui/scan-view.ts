@@ -1,12 +1,12 @@
 import type { Brush, Paint } from '../paints/paint';
 import { findBrush, findPaint } from '../paints/inventory';
 import { resizeImage } from '../platform/image';
-import { applyScan, buildScanPrompt, isComplete, parseScanAnswer } from '../scan/scan';
+import { applyScan, buildScanPrompt, checkInCatalogue, isComplete, parseScanAnswer } from '../scan/scan';
 import { displayName } from '../paints/names';
 import { copy } from './copy';
 import { h, show, swatch, type Deps } from './dom';
 
-interface PaintItem { paint: Paint; included: boolean }
+interface PaintItem { paint: Paint; included: boolean; fromCatalogue?: boolean }
 interface BrushItem { brush: Brush; included: boolean }
 
 const brushComplete = (b: Brush) => !!b.code.trim() && !!b.name.trim();
@@ -41,7 +41,10 @@ export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
   };
 
   const read = async (raw: string) => {
-    const result = parseScanAnswer(raw, await deps.repo.getInventory());
+    const inv = await deps.repo.getInventory();
+    const parsed = parseScanAnswer(raw, inv);
+    // The catalogue is checked first; the AI's data is kept only for paints it does not list.
+    const result = parsed.ok ? checkInCatalogue(parsed, inv) : parsed;
     if (!result.ok) {
       answer.value = raw;
       answer.hidden = false;
@@ -51,7 +54,7 @@ export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
     }
     await confirmList(
       // A paint the user already owns comes unticked: ticking it updates the owned one.
-      result.paints.map((s) => ({ paint: s.paint, included: isComplete(s.paint) && !s.existing })),
+      result.paints.map((s) => ({ paint: s.paint, included: isComplete(s.paint) && !s.existing, fromCatalogue: s.fromCatalogue })),
       result.brushes.map((s) => ({ brush: s.brush, included: brushComplete(s.brush) })),
     );
   };
@@ -78,7 +81,7 @@ export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
 
     const row = (
       prefix: string, index: number, item: { included: boolean }, complete: () => boolean, owned: () => Paint | Brush | undefined,
-      fields: [string, string, (v: string) => void][], lead: Node | null,
+      fields: [string, string, (v: string) => void][], lead: Node | null, note: Node | null = null,
     ) => {
       const box = h('input', { type: 'checkbox', 'data-testid': `${prefix}-include-${index}` });
       const label = h('span', { class: 'hint' });
@@ -109,7 +112,7 @@ export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
         return input;
       });
       refresh();
-      return h('li', { class: 'scan-row' }, box, lead, ...inputs, label);
+      return h('li', { class: 'scan-row' }, box, lead, ...inputs, label, note);
     };
 
     const paintRows = paints.map((item, i) => {
@@ -120,7 +123,7 @@ export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
         ['code', p().code, (v) => set({ code: v })],
         ['name', p().name, (v) => set({ name: v })],
         ['nameEn', p().nameEn ?? '', (v) => set({ nameEn: v.trim() || undefined })],
-      ], swatch(p().hex));
+      ], swatch(p().hex), item.fromCatalogue ? h('span', { class: 'hint', 'data-testid': `scan-paint-catalogue-${i}` }, c.fromCatalogue) : null);
     });
     const brushRows = brushes.map((item, i) => {
       const set = (patch: Partial<Brush>) => { item.brush = { ...item.brush, ...patch }; };
