@@ -16,7 +16,10 @@ export interface PaintFamily {
 }
 
 export interface Paint extends PaintRef {
+  /** Spanish name (the one the BSL set and the advisor use). */
   name: string;
+  /** English name, when known. Absent in older data: read it through englishName. */
+  nameEn?: string;
   range: string;
   type: PaintType;
   /** Approximate display colour, '#rrggbb'. Only for the interface. */

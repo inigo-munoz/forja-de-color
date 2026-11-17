@@ -22,9 +22,9 @@ export function buildScanPrompt(): string {
     '',
     'Rules:',
     '- Only list what you can see. If you cannot read a code, leave "code" empty instead of guessing.',
+    '- For each paint, search the web (the maker\'s site or a colour chart) for its official name in Spanish ("nameEs") and in English ("nameEn") and its real colour ("hex", as #rrggbb). If you cannot confirm a name or the colour, leave it empty instead of inventing it.',
     '- "brand" is the maker (for example Vallejo, Citadel, Army Painter) and "range" the product line (for example Game Color, Model Color).',
     '- "type" is one of: opaque, wash, metallic, medium, primer, other.',
-    '- "hex" is the approximate colour of the paint as #rrggbb.',
     '- For a brush, "code" is the size or model printed on it (for example 2, 0, 5/0) and "name" a short description.',
     '',
     `${PROMPT_MARKER} (reply with this JSON only):`,
@@ -33,7 +33,7 @@ export function buildScanPrompt(): string {
     '  "version": 1,',
     '  "kind": "inventory",',
     '  "paints": [',
-    '    { "brand": "Vallejo", "code": "72.001", "name": "Dead White", "range": "Game Color", "type": "opaque", "hex": "#ffffff" }',
+    '    { "brand": "Vallejo", "code": "72.001", "nameEs": "Blanco Calavera", "nameEn": "Dead White", "range": "Game Color", "type": "opaque", "hex": "#ffffff" }',
     '  ],',
     '  "brushes": [',
     '    { "code": "2", "name": "Round synthetic" }',
@@ -66,11 +66,13 @@ function toPaint(e: unknown): Paint | null {
   if (!isObj(e)) return null;
   const brand = text(e, 'brand');
   const code = text(e, 'code');
-  const name = text(e, 'name');
+  const nameEn = text(e, 'nameEn');
+  // Spanish is the app's main name; an answer with only "name" or only "nameEn" still works.
+  const name = text(e, 'nameEs') || text(e, 'name') || nameEn;
   if (!code && !name) return null;
   const type = TYPES.find((t) => t === text(e, 'type').toLowerCase()) ?? 'other';
   const hex = HEX.test(text(e, 'hex')) ? text(e, 'hex').toLowerCase() : UNKNOWN_HEX;
-  return { brand, code: code ? normalizeCode(brand, code) : '', name, range: text(e, 'range'), type, hex };
+  return { brand, code: code ? normalizeCode(brand, code) : '', name, ...(nameEn ? { nameEn } : {}), range: text(e, 'range'), type, hex };
 }
 
 function toBrush(e: unknown): Brush | null {

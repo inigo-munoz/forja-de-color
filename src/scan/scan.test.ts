@@ -13,6 +13,14 @@ const success = (raw: string) => {
 const errors = (raw: string) => (parseScanAnswer(raw, inv) as Extract<ScanResult, { ok: false }>).errors;
 
 describe('scan answer', () => {
+  it('the instructions ask to look up both names and the real colour, and not to invent', () => {
+    const prompt = buildScanPrompt();
+    expect(prompt).toContain('search the web');
+    expect(prompt).toContain('"nameEs"');
+    expect(prompt).toContain('"nameEn"');
+    expect(prompt).toContain('leave it empty instead of inventing it');
+  });
+
   it('the instructions ask for the scan JSON and say not to guess codes', () => {
     const prompt = buildScanPrompt();
     expect(prompt).toContain('"kind": "inventory"');
@@ -34,6 +42,18 @@ describe('scan answer', () => {
     expect(r.paints[1].paint.type).toBe('wash');
     expect(r.brushes[0].existing).toEqual({ code: '2', name: 'Round' });
     expect(r.brushes[1].existing).toBeUndefined();
+  });
+
+  it('reads the Spanish and English names, falling back to the plain name', () => {
+    const r = success(`{"version": 1, "kind": "inventory", "paints": [
+      {"brand": "Vallejo", "code": "72.090", "nameEs": "Lavado Negro", "nameEn": "Black Wash", "type": "wash", "hex": "#1a1a1a"},
+      {"brand": "Citadel", "code": "Nuln Oil", "name": "Nuln Oil", "type": "wash"},
+      {"brand": "Army Painter", "code": "WP1105", "nameEn": "Dragon Red"}
+    ]}`);
+    expect(r.paints.map((p) => [p.paint.name, p.paint.nameEn])).toEqual([
+      ['Lavado Negro', 'Black Wash'], ['Nuln Oil', undefined], ['Dragon Red', 'Dragon Red'],
+    ]);
+    expect('nameEn' in r.paints[1].paint).toBe(false);
   });
 
   it('is lenient with what the AI gets loosely right', () => {

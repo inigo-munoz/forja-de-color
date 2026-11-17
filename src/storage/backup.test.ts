@@ -180,4 +180,15 @@ describe('backup — done zones', () => {
     expect(await importAll(repo, withLook({ style: 'cel' }))).toEqual({ ok: false, error: 'project #1 has an unknown painting style or base setting' });
     expect(JSON.stringify(await exportAll(repo, now))).toBe(before);
   });
+
+  const withPaint = (paint: Record<string, unknown>) => ({
+    app: 'forja-de-color', version: 1, exportedAt: '', blobs: {}, projects: [],
+    inventory: { brushes: [], paints: [{ brand: 'Vallejo', code: '72.001', name: 'Blanco Calavera', range: 'Game Color', type: 'opaque', hex: '#ffffff', ...paint }] },
+  });
+
+  it('accepts paints with and without an English name, and rejects one that is not text', () => {
+    expect(validateBackup(withPaint({}))).toBeNull();
+    expect(validateBackup(withPaint({ nameEn: 'Dead White' }))).toBeNull();
+    expect(validateBackup(withPaint({ nameEn: 3 }))).toBe('paint #1 has an invalid English name');
+  });
 });
