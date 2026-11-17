@@ -1,4 +1,4 @@
-import { addBrush, findPaint, savePaintKeepingFamily } from '../paints/inventory';
+import { addBrush, findPaint, removePaint, savePaintKeepingFamily } from '../paints/inventory';
 import { paintFromCatalogue, searchCatalogue } from '../paints/catalogue';
 import { searchSets } from '../paints/sets';
 import { displayName } from '../paints/names';
@@ -23,8 +23,15 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
   }
   const row = (p: Paint) => {
     const role = bslRole(p);
+    // Deleting asks first: projects that use the paint will show it as not in your paints.
+    const remove = async () => {
+      if (!window.confirm(copy.inventory.deleteConfirm)) return;
+      await deps.repo.saveInventory(removePaint(await deps.repo.getInventory(), p));
+      await renderInventory(root, deps);
+    };
     return h('li', { 'data-testid': 'paint', class: 'paint-row' }, swatch(p.hex), h('span', { class: 'code' }, p.code), ` ${displayName(p)}`,
-      role ? ' · ' : null, role ? h('span', { 'data-testid': 'role', class: 'code' }, copy.inventory.roles[role]) : null);
+      role ? ' · ' : null, role ? h('span', { 'data-testid': 'role', class: 'code' }, copy.inventory.roles[role]) : null,
+      h('button', { type: 'button', class: 'secondary delete-paint', 'data-testid': 'delete-paint', 'aria-label': `${copy.inventory.delete} ${p.code}`, onclick: () => void remove() }, copy.inventory.delete));
   };
 
   const groups = [...families.entries()].map(([name, paints]) =>

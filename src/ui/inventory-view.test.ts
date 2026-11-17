@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import type { Paint } from '../paints/paint';
 import { renderInventory } from './inventory-view';
 import { flush, makeDeps, mount } from './test-helpers';
@@ -169,5 +170,26 @@ describe('inventory view', () => {
     const set = root.querySelector<HTMLAnchorElement>('[data-testid="catalogue-set-0"]')!;
     expect(set.textContent).toContain('Non-Metallic Metal');
     expect(set.getAttribute('href')).toBe('#/scan/72.212');
+  });
+
+  it('deletes a paint only after confirming', async () => {
+    const root = mount();
+    const deps = await makeDeps();
+    await renderInventory(root, deps);
+    const deleteOf = (code: string) =>
+      [...root.querySelectorAll('[data-testid="paint"]')].find((r) => r.textContent!.includes(code))!.querySelector<HTMLButtonElement>('[data-testid="delete-paint"]')!;
+
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
+    deleteOf('72.003').click();
+    await flush(); await flush();
+    expect((await deps.repo.getInventory()).paints).toHaveLength(48);
+
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
+    deleteOf('72.003').click();
+    await flush(); await flush();
+    const inv = await deps.repo.getInventory();
+    expect(inv.paints).toHaveLength(47);
+    expect(inv.paints.some((p) => p.code === '72.003')).toBe(false);
+    expect(root.textContent).not.toContain('72.003');
   });
 });
