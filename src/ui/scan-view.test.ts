@@ -86,7 +86,11 @@ describe('add from a photo', () => {
     $(root, 'scan-paste').click();
     await ticks();
 
-    expect($<HTMLInputElement>(root, 'scan-paint-include-0').checked).toBe(true);
+    // Dead White (72.001) is already owned: flagged and unticked; ticking it updates the owned one.
+    expect($<HTMLInputElement>(root, 'scan-paint-include-0').checked).toBe(false);
+    expect($(root, 'scan-paint-owned-0').textContent).toBe('You already have it: Blanco Calavera · Dead White (72.001)');
+    expect(root.querySelector('[data-testid="scan-paint-owned-1"]')).toBeNull();
+    $<HTMLInputElement>(root, 'scan-paint-include-0').click();
     expect($<HTMLInputElement>(root, 'scan-paint-include-1').checked).toBe(true);
     expect($<HTMLInputElement>(root, 'scan-paint-include-2').disabled).toBe(true);
     expect((await deps.repo.getInventory()).paints).toHaveLength(48);

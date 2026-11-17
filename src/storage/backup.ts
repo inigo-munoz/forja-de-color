@@ -75,6 +75,8 @@ export function validateBackup(file: unknown): string | null {
   const str = (o: Record<string, unknown>, ...keys: string[]) => keys.every((k) => typeof o[k] === 'string');
   const badPaint = inv.paints.findIndex((p) => !isObj(p) || !str(p, 'brand', 'code', 'name', 'range', 'type', 'hex'));
   if (badPaint >= 0) return `paint #${badPaint + 1} needs brand, code, name, range, type and hex`;
+  const badName = inv.paints.findIndex((p) => 'nameEn' in (p as Record<string, unknown>) && typeof (p as Record<string, unknown>).nameEn !== 'string');
+  if (badName >= 0) return `paint #${badName + 1} has an invalid English name`;
   const badBrush = inv.brushes.findIndex((b) => !isObj(b) || !str(b, 'code', 'name'));
   if (badBrush >= 0) return `brush #${badBrush + 1} needs code and name`;
   if (!Array.isArray(file.projects)) return 'backup has no valid projects';

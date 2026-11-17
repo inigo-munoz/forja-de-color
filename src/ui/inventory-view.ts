@@ -1,4 +1,5 @@
-import { addBrush, savePaintKeepingFamily } from '../paints/inventory';
+import { addBrush, findPaint, savePaintKeepingFamily } from '../paints/inventory';
+import { displayName } from '../paints/names';
 import type { Paint, PaintType } from '../paints/paint';
 import { bslRole } from '../paints/roles';
 import { groupByColour, type ColourGroup } from '../paints/wheel';
@@ -20,7 +21,7 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
   }
   const row = (p: Paint) => {
     const role = bslRole(p);
-    return h('li', { 'data-testid': 'paint', class: 'paint-row' }, swatch(p.hex), h('span', { class: 'code' }, p.code), ` ${p.name}`,
+    return h('li', { 'data-testid': 'paint', class: 'paint-row' }, swatch(p.hex), h('span', { class: 'code' }, p.code), ` ${displayName(p)}`,
       role ? ' · ' : null, role ? h('span', { 'data-testid': 'role', class: 'code' }, copy.inventory.roles[role]) : null);
   };
 
@@ -32,22 +33,33 @@ export async function renderInventory(root: HTMLElement, deps: Deps): Promise<vo
 
   const field = (name: string, label: string, attrs: Record<string, string> = {}) =>
     h('label', {}, label, h('input', { name, required: 'true', ...attrs }));
+  const alreadyOwned = h('p', { class: 'error', 'data-testid': 'already-owned', hidden: true });
   const form = h('form', { 'data-testid': 'add-paint', class: 'card' },
     h('h3', {}, copy.inventory.addTitle),
     field('brand', copy.inventory.brand, { value: 'Vallejo' }),
     field('code', copy.inventory.code),
+    alreadyOwned,
     field('name', copy.inventory.name),
+    h('label', {}, copy.inventory.nameEn, h('input', { name: 'nameEn' })),
     field('range', copy.inventory.range, { value: 'Game Color' }),
     h('label', {}, copy.inventory.type, h('select', { name: 'type' }, ...TYPES.map((t) => h('option', { value: t }, t)))),
     field('hex', copy.inventory.hex, { type: 'color', value: '#888888' }),
     h('button', { type: 'submit' }, copy.inventory.add),
   );
+  // A code the user already owns is flagged while typing; saving it updates that paint.
+  form.addEventListener('input', () => {
+    const value = (n: string) => (form.elements.namedItem(n) as HTMLInputElement).value.trim();
+    const owned = value('code') ? findPaint(inv, { brand: value('brand'), code: value('code') }) : undefined;
+    alreadyOwned.hidden = !owned;
+    alreadyOwned.textContent = owned ? copy.inventory.alreadyOwned(displayName(owned), owned.code) : '';
+  });
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const get = (n: string) => (form.elements.namedItem(n) as HTMLInputElement).value.trim();
     const paint: Paint = {
       brand: get('brand'), code: get('code'), name: get('name'), range: get('range'),
       type: (get('type') || 'opaque') as PaintType, hex: get('hex').toLowerCase(),
+      ...(get('nameEn') ? { nameEn: get('nameEn') } : {}),
     };
     // Same lookup as addPaint (normalized code), so "72003" finds 72.003 and keeps its BSL family.
     await deps.repo.saveInventory(savePaintKeepingFamily(await deps.repo.getInventory(), paint));

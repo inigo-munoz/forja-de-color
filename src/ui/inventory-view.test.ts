@@ -97,4 +97,45 @@ describe('inventory view', () => {
     expect(groups[0].textContent).toContain('Scarlet');
     expect(root.querySelector(`[data-family="${seed.paints[0].family!.name}"]`)!.textContent).toContain(seed.paints[0].name);
   });
+
+  it('shows each paint with its Spanish and English names', async () => {
+    const root = mount();
+    await renderInventory(root, await makeDeps());
+    const rows = [...root.querySelectorAll('[data-testid="paint"]')].map((r) => r.textContent);
+    expect(rows.some((t) => t!.includes('Blanco Calavera · Dead White'))).toBe(true);
+  });
+
+  it('warns while typing a code you already have, and saves the English name', async () => {
+    const root = mount();
+    const deps = await makeDeps();
+    await renderInventory(root, deps);
+    const form = root.querySelector<HTMLFormElement>('[data-testid="add-paint"]')!;
+    const warning = root.querySelector<HTMLElement>('[data-testid="already-owned"]')!;
+    const set = (name: string, value: string) => {
+      const input = form.elements.namedItem(name) as HTMLInputElement;
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    expect(warning.hidden).toBe(true);
+    set('code', '72001');
+    expect(warning.hidden).toBe(false);
+    expect(warning.textContent).toBe('You already have it: Blanco Calavera · Dead White (72.001)');
+    set('code', '72.999');
+    expect(warning.hidden).toBe(true);
+
+    set('name', 'Nuevo'); set('nameEn', 'Brand New');
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await flush(); await flush();
+    expect((await deps.repo.getInventory()).paints.find((p) => p.code === '72.999')?.nameEn).toBe('Brand New');
+  });
+
+  it('shows the seed English name for a stored paint without one, without saving it', async () => {
+    const deps = await makeDeps();
+    const inv = await deps.repo.getInventory();
+    await deps.repo.saveInventory({ ...inv, paints: inv.paints.map(({ nameEn: _n, ...p }) => p) });
+    const root = mount();
+    await renderInventory(root, deps);
+    expect(root.textContent).toContain('Blanco Calavera · Dead White');
+    expect(JSON.stringify(await deps.repo.getInventory())).not.toContain('nameEn');
+  });
 });

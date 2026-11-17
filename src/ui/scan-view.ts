@@ -2,6 +2,7 @@ import type { Brush, Paint } from '../paints/paint';
 import { findBrush, findPaint } from '../paints/inventory';
 import { resizeImage } from '../platform/image';
 import { applyScan, buildScanPrompt, isComplete, parseScanAnswer } from '../scan/scan';
+import { displayName } from '../paints/names';
 import { copy } from './copy';
 import { h, show, swatch, type Deps } from './dom';
 
@@ -9,6 +10,9 @@ interface PaintItem { paint: Paint; included: boolean }
 interface BrushItem { brush: Brush; included: boolean }
 
 const brushComplete = (b: Brush) => !!b.code.trim() && !!b.name.trim();
+// Same as Android: an owned paint gets the clear warning, an owned brush the plain "updates" line.
+const alreadyText = (mine: Paint | Brush) =>
+  'hex' in mine ? copy.inventory.alreadyOwned(displayName(mine), mine.code) : copy.scan.updates;
 
 /**
  * Adds paints and brushes from a photo: 1. the photo, 2. send it to the AI with the scan instructions,
@@ -46,7 +50,8 @@ export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
       return;
     }
     await confirmList(
-      result.paints.map((s) => ({ paint: s.paint, included: isComplete(s.paint) })),
+      // A paint the user already owns comes unticked: ticking it updates the owned one.
+      result.paints.map((s) => ({ paint: s.paint, included: isComplete(s.paint) && !s.existing })),
       result.brushes.map((s) => ({ brush: s.brush, included: brushComplete(s.brush) })),
     );
   };
@@ -72,7 +77,7 @@ export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
     };
 
     const row = (
-      prefix: string, index: number, item: { included: boolean }, complete: () => boolean, updates: () => boolean,
+      prefix: string, index: number, item: { included: boolean }, complete: () => boolean, owned: () => Paint | Brush | undefined,
       fields: [string, string, (v: string) => void][], lead: Node | null,
     ) => {
       const box = h('input', { type: 'checkbox', 'data-testid': `${prefix}-include-${index}` });
@@ -80,7 +85,12 @@ export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
       const refresh = () => {
         box.disabled = !complete();
         box.checked = item.included && complete();
-        label.textContent = !complete() ? c.incomplete : updates() ? c.updates : c.isNew;
+        const mine = owned();
+        label.textContent = !complete() ? c.incomplete : mine ? alreadyText(mine) : c.isNew;
+        const warn = complete() && !!mine && 'hex' in mine;
+        label.className = warn ? 'error' : 'hint';
+        if (warn) label.setAttribute('data-testid', `${prefix}-owned-${index}`);
+        else label.removeAttribute('data-testid');
         refreshSave();
       };
       box.addEventListener('change', () => {
@@ -105,15 +115,16 @@ export async function renderScan(root: HTMLElement, deps: Deps): Promise<void> {
     const paintRows = paints.map((item, i) => {
       const p = () => item.paint;
       const set = (patch: Partial<Paint>) => { item.paint = { ...item.paint, ...patch }; };
-      return row('scan-paint', i, item, () => isComplete(p()), () => !!p().code && !!findPaint(inv, p()), [
+      return row('scan-paint', i, item, () => isComplete(p()), () => (p().code ? findPaint(inv, p()) : undefined), [
         ['brand', p().brand, (v) => set({ brand: v })],
         ['code', p().code, (v) => set({ code: v })],
         ['name', p().name, (v) => set({ name: v })],
+        ['nameEn', p().nameEn ?? '', (v) => set({ nameEn: v.trim() || undefined })],
       ], swatch(p().hex));
     });
     const brushRows = brushes.map((item, i) => {
       const set = (patch: Partial<Brush>) => { item.brush = { ...item.brush, ...patch }; };
-      return row('scan-brush', i, item, () => brushComplete(item.brush), () => !!findBrush(inv, item.brush.code), [
+      return row('scan-brush', i, item, () => brushComplete(item.brush), () => findBrush(inv, item.brush.code), [
         ['code', item.brush.code, (v) => set({ code: v })],
         ['name', item.brush.name, (v) => set({ name: v })],
       ], null);

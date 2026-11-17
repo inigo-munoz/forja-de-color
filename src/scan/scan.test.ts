@@ -13,6 +13,14 @@ const success = (raw: string) => {
 const errors = (raw: string) => (parseScanAnswer(raw, inv) as Extract<ScanResult, { ok: false }>).errors;
 
 describe('scan answer', () => {
+  it('the instructions ask to look up both names and the real colour, and not to invent', () => {
+    const prompt = buildScanPrompt();
+    expect(prompt).toContain('search the web');
+    expect(prompt).toContain('"nameEs"');
+    expect(prompt).toContain('"nameEn"');
+    expect(prompt).toContain('leave it empty instead of inventing it');
+  });
+
   it('the instructions ask for the scan JSON and say not to guess codes', () => {
     const prompt = buildScanPrompt();
     expect(prompt).toContain('"kind": "inventory"');
@@ -34,6 +42,18 @@ describe('scan answer', () => {
     expect(r.paints[1].paint.type).toBe('wash');
     expect(r.brushes[0].existing).toEqual({ code: '2', name: 'Round' });
     expect(r.brushes[1].existing).toBeUndefined();
+  });
+
+  it('reads the Spanish and English names, falling back to the plain name', () => {
+    const r = success(`{"version": 1, "kind": "inventory", "paints": [
+      {"brand": "Vallejo", "code": "72.090", "nameEs": "Lavado Negro", "nameEn": "Black Wash", "type": "wash", "hex": "#1a1a1a"},
+      {"brand": "Citadel", "code": "Nuln Oil", "name": "Nuln Oil", "type": "wash"},
+      {"brand": "Army Painter", "code": "WP1105", "nameEn": "Dragon Red"}
+    ]}`);
+    expect(r.paints.map((p) => [p.paint.name, p.paint.nameEn])).toEqual([
+      ['Lavado Negro', 'Black Wash'], ['Nuln Oil', undefined], ['Dragon Red', 'Dragon Red'],
+    ]);
+    expect('nameEn' in r.paints[1].paint).toBe(false);
   });
 
   it('is lenient with what the AI gets loosely right', () => {
@@ -71,6 +91,12 @@ describe('saving a scan', () => {
   it('a confirmed paint replaces the owned one but keeps its BSL family', () => {
     const updated = savePaintKeepingFamily(inv, { ...owned, code: '72001', name: 'Dead White', family: undefined });
     expect(updated.paints).toEqual([{ ...owned, name: 'Dead White' }]);
+  });
+
+  it('updating a paint without an English name keeps the one it had', () => {
+    const named: Inventory = { ...inv, paints: [{ ...owned, nameEn: 'My own name' }] };
+    expect(savePaintKeepingFamily(named, { ...owned, name: 'Renamed', family: undefined }).paints[0].nameEn).toBe('My own name');
+    expect(savePaintKeepingFamily(named, { ...owned, nameEn: 'New name' }).paints[0].nameEn).toBe('New name');
   });
 
   it('a brush with an existing code is updated, a new one is added', () => {

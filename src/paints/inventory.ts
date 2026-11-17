@@ -34,12 +34,16 @@ export function findPaintLoose(inv: Inventory, text: string): Paint | undefined 
 
 /**
  * Saves the paint through addPaint. A paint that replaces one in a BSL family keeps that family, so
- * updating "72003" by hand or from a scan does not drop it from its set. Same rule as the Android app.
+ * updating "72003" by hand or from a scan does not drop it from its set; an update without an English
+ * name keeps the owned one. Same rule as the Android app.
  */
 export function savePaintKeepingFamily(inv: Inventory, paint: Paint): Inventory {
   const prior = findPaint(inv, paint);
   const { family: _drop, ...rest } = paint;
-  return addPaint(inv, prior?.family ? { ...rest, family: prior.family } : paint.family ? paint : rest);
+  const withFamily: Paint = prior?.family ? { ...rest, family: prior.family } : paint.family ? paint : rest;
+  // An update without an English name keeps the one the owned paint had.
+  const nameEn = withFamily.nameEn?.trim() || prior?.nameEn;
+  return addPaint(inv, nameEn ? { ...withFamily, nameEn } : withFamily);
 }
 
 /** The owned brush with this code (trimmed, case-insensitive), if any. */
