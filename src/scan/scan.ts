@@ -13,7 +13,7 @@ export const UNKNOWN_HEX = '#888888';
 // Only in the scan instructions, never in a real answer: the user pasted the prompt.
 const PROMPT_MARKER = 'PAINT SCAN FORMAT';
 const HEX = /^#[0-9a-f]{6}$/i;
-const TYPES: PaintType[] = ['opaque', 'wash', 'metallic', 'medium', 'primer', 'other'];
+const TYPES: PaintType[] = ['opaque', 'wash', 'ink', 'metallic', 'medium', 'primer', 'other'];
 
 /** The fixed instructions sent with the photo. Same text as the Android app (domain/scan/InventoryScan.kt). */
 export function buildScanPrompt(): string {
@@ -25,7 +25,7 @@ export function buildScanPrompt(): string {
     '- Only list what you can see. If you cannot read a code, leave "code" empty instead of guessing.',
     '- For each paint, search the web (the maker\'s site or a colour chart) for its official name in Spanish ("nameEs") and in English ("nameEn") and its real colour ("hex", as #rrggbb). If you cannot confirm a name or the colour, leave it empty instead of inventing it.',
     '- "brand" is the maker (for example Vallejo, Citadel, Army Painter) and "range" the product line (for example Game Color, Model Color).',
-    '- "type" is one of: opaque, wash, metallic, medium, primer, other.',
+    '- "type" is one of: opaque, wash, ink, metallic, medium, primer, other.',
     '- For a brush, "code" is the size or model printed on it (for example 2, 0, 5/0) and "name" a short description.',
     '',
     `${PROMPT_MARKER} (reply with this JSON only):`,

@@ -45,4 +45,17 @@ describe('paint catalogue', () => {
     const unknown = scanned({ brand: 'Scale75', code: 'SC-01', name: 'Black', hex: '#111111' });
     expect(lookUpInCatalogue(unknown)).toEqual({ paint: unknown, fromCatalogue: false });
   });
+
+  it('types each paint from its range and whole words of its name, with inks apart', () => {
+    const type = (brand: string, code: string) => findInCatalogue({ brand, code })?.type;
+    expect(type('Vallejo', '70.939')).toBe('ink');
+    expect(type('Vallejo', '72.091')).toBe('ink');
+    expect(type('Citadel', 'Leadbelcher')).toBe('metallic');
+    expect(type('Citadel', 'Steel Legion Drab')).toBe('opaque');
+    expect(type('Vallejo', '70.987')).toBe('opaque');
+    expect(type('Army Painter', 'Ancient Stone')).toBe('opaque');
+    expect(type('Vallejo', '72.007')).toBe('opaque');
+    expect(type('Citadel', 'Lahmian Medium')).toBe('medium');
+    expect(type('Citadel', 'Nuln Oil')).toBe('wash');
+  });
 });

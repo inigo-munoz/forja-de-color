@@ -10,7 +10,7 @@ import { h, show, swatch, type Deps } from './dom';
 const groupLabel = (g: ColourGroup) =>
   g === 'neutrals' ? copy.wheel.neutrals : g === 'mediums' ? copy.inventory.mediums : copy.wheel.colours[g];
 
-const TYPES: PaintType[] = ['opaque', 'wash', 'metallic', 'medium', 'primer', 'other'];
+const TYPES: PaintType[] = ['opaque', 'wash', 'ink', 'metallic', 'medium', 'primer', 'other'];
 
 export async function renderInventory(root: HTMLElement, deps: Deps): Promise<void> {
   const inv = await deps.repo.getInventory();

@@ -19,6 +19,7 @@ describe('scan answer', () => {
     expect(prompt).toContain('"nameEs"');
     expect(prompt).toContain('"nameEn"');
     expect(prompt).toContain('leave it empty instead of inventing it');
+    expect(prompt).toContain('opaque, wash, ink, metallic, medium, primer, other');
   });
 
   it('the instructions ask for the scan JSON and say not to guess codes', () => {
@@ -67,6 +68,7 @@ describe('scan answer', () => {
     expect(r.paints.map((p) => p.paint.name)).toEqual(['Dragon Red', 'Dead White']);
     expect(r.paints[0].paint).toMatchObject({ code: '', type: 'opaque', hex: '#888888', range: '' });
     expect(r.paints[1].paint.type).toBe('other');
+    expect(success('{"version": 1, "kind": "inventory", "paints": [{"brand": "Vallejo", "code": "70.939", "name": "Smoke Ink", "type": "Ink"}]}').paints[0].paint.type).toBe('ink');
     expect(r.brushes).toEqual([]);
   });
 
