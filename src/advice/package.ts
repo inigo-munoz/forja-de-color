@@ -1,3 +1,4 @@
+import { adviceLookLines } from '../projects/style';
 import type { BslRole, Inventory } from '../paints/paint';
 import { bslRole } from '../paints/roles';
 import type { AdvicePackage, AdviceRequest } from './schema';
@@ -67,7 +68,8 @@ function momentRequest(req: AdviceRequest): string {
 export function buildAdvicePackage(req: AdviceRequest, inv: Inventory, photo: Blob): AdvicePackage {
   const format =
     req.moment === 'during' ? CONSULTATION_FORMAT : RECIPE_FORMAT(req.moment);
-  const text = [METHOD, inventoryLines(inv), momentRequest(req), format].join('\n\n');
+  const look = adviceLookLines(req);
+  const text = [METHOD, inventoryLines(inv), momentRequest(req), ...(look.length ? [look.join('\n')] : []), format].join('\n\n');
   return { text, image: photo };
 }
 

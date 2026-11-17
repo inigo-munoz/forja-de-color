@@ -1,3 +1,4 @@
+import type { Look } from '../projects/style';
 import type { PaintRef } from '../paints/paint';
 
 export type Moment = 'start' | 'primed' | 'half-painted' | 'during';
@@ -54,7 +55,7 @@ export interface AdviceEntry {
   doneZones?: number[];
 }
 
-export interface AdviceRequest {
+export interface AdviceRequest extends Look {
   moment: Moment;
   zone?: string;
   question?: Question;

@@ -1,3 +1,4 @@
+import { isBaseSetting, isPaintingStyle } from '../projects/style';
 import type { Inventory } from '../paints/paint';
 import type { Project } from '../projects/project';
 import type { Repository } from './repository';
@@ -81,6 +82,11 @@ export function validateBackup(file: unknown): string | null {
     (p) => !isObj(p) || !str(p, 'id', 'name', 'createdAt', 'status', 'notes') || !Array.isArray(p.progress) || !Array.isArray(p.advice),
   );
   if (badProject >= 0) return `project #${badProject + 1} is incomplete`;
+  const badLook = file.projects.findIndex((p) => {
+    const o = p as Record<string, unknown>;
+    return ('style' in o && !isPaintingStyle(o.style)) || ('baseSetting' in o && !isBaseSetting(o.baseSetting));
+  });
+  if (badLook >= 0) return `project #${badLook + 1} has an unknown painting style or base setting`;
   const doneZonesError = file.projects.map((p, i) => doneZonesProblem(p as Record<string, unknown>, i)).find((e) => e !== null);
   if (doneZonesError) return doneZonesError;
   if (!isObj(file.blobs)) return 'backup has no valid photos';
