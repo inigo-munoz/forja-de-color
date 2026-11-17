@@ -1,7 +1,27 @@
 // All interface copy lives here. Switching the UI language is a change to this file only.
 export const copy = {
   appName: 'Forja de Color',
-  nav: { projects: 'Projects', inventory: 'My paints', settings: 'Settings' },
+  nav: { projects: 'Projects', inventory: 'My paints', wheel: 'Colours', settings: 'Settings' },
+  wheel: {
+    title: 'Colour theory',
+    hint: 'Tap a colour to see its harmonies and which of your paints match.',
+    yourPaints: 'Your paints in this colour',
+    complementary: 'Complementary',
+    complementaryHint: 'The opposite colour on the wheel: the strongest contrast.',
+    analogous: 'Analogous',
+    analogousHint: 'The two neighbouring colours: a soft harmony.',
+    triad: 'Triad',
+    triadHint: 'Three colours evenly spaced: a balanced contrast.',
+    noPaints: 'None of your paints.',
+    neutrals: 'Neutrals',
+    neutralsHint: 'Black, white, grey and metallics are not on the wheel: they go with any colour.',
+    kinds: { primary: 'Primary', secondary: 'Secondary', tertiary: 'Tertiary' },
+    colours: {
+      'red': 'Red', 'red-orange': 'Red-orange', 'orange': 'Orange', 'yellow-orange': 'Yellow-orange',
+      'yellow': 'Yellow', 'yellow-green': 'Yellow-green', 'green': 'Green', 'blue-green': 'Blue-green',
+      'blue': 'Blue', 'blue-violet': 'Blue-violet', 'violet': 'Violet', 'red-violet': 'Red-violet',
+    },
+  },
   inventory: {
     title: 'My paints',
     brushes: 'Brushes',

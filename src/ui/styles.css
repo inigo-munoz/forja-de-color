@@ -34,3 +34,9 @@ img.photo { max-width: 100%; border-radius: 10px; }
 .compare-stage img { width: 100%; border-radius: 10px; display: block; }
 .compare-after { position: absolute; inset: 0; height: 100%; object-fit: cover; }
 .compare input[type=range] { min-height: 32px; }
+.hint { color: var(--muted); font-size: .9rem; margin: .25rem 0 .5rem; }
+.wheel-box { display: flex; justify-content: center; margin: 0 0 1rem; }
+.wheel { width: min(100%, 320px); height: auto; }
+.wheel .sector { cursor: pointer; stroke: var(--bg); stroke-width: 1; }
+.wheel .sector.selected { stroke: var(--text); stroke-width: 3; }
+.wheel .sector:focus-visible { outline: none; stroke: var(--accent); stroke-width: 3; }
