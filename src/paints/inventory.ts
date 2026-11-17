@@ -1,4 +1,4 @@
-import type { Inventory, Paint, PaintRef } from './paint';
+import type { Brush, Inventory, Paint, PaintRef } from './paint';
 import { normalizeCode, paintKey } from './paint';
 
 export function addPaint(inv: Inventory, paint: Paint): Inventory {
@@ -30,4 +30,28 @@ export function findPaintLoose(inv: Inventory, text: string): Paint | undefined 
     if (found) return found;
   }
   return undefined;
+}
+
+/**
+ * Saves the paint through addPaint. A paint that replaces one in a BSL family keeps that family, so
+ * updating "72003" by hand or from a scan does not drop it from its set. Same rule as the Android app.
+ */
+export function savePaintKeepingFamily(inv: Inventory, paint: Paint): Inventory {
+  const prior = findPaint(inv, paint);
+  const { family: _drop, ...rest } = paint;
+  return addPaint(inv, prior?.family ? { ...rest, family: prior.family } : paint.family ? paint : rest);
+}
+
+/** The owned brush with this code (trimmed, case-insensitive), if any. */
+export function findBrush(inv: Inventory, code: string): Brush | undefined {
+  const c = code.trim().toLowerCase();
+  return inv.brushes.find((b) => b.code.toLowerCase() === c);
+}
+
+/** Adds the brush, or replaces the one with the same code (trimmed, case-insensitive). */
+export function addBrush(inv: Inventory, brush: Brush): Inventory {
+  const clean: Brush = { code: brush.code.trim(), name: brush.name.trim() };
+  const same = (b: Brush) => b.code.toLowerCase() === clean.code.toLowerCase();
+  const brushes = inv.brushes.some(same) ? inv.brushes.map((b) => (same(b) ? clean : b)) : [...inv.brushes, clean];
+  return { ...inv, brushes };
 }

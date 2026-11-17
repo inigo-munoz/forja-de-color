@@ -57,4 +57,29 @@ describe('inventory view', () => {
     expect(before).toBeDefined();
     expect((await deps.repo.getInventory()).paints.find((p) => p.code === '72.003')?.family).toEqual(before);
   });
+
+  it('adds a brush, and a brush with an existing code updates it instead of adding another', async () => {
+    const root = mount();
+    const deps = await makeDeps();
+    await renderInventory(root, deps);
+    const submit = async (code: string, name: string) => {
+      const form = root.querySelector<HTMLFormElement>('[data-testid="add-brush"]')!;
+      (form.elements.namedItem('code') as HTMLInputElement).value = code;
+      (form.elements.namedItem('name') as HTMLInputElement).value = name;
+      form.dispatchEvent(new Event('submit', { cancelable: true }));
+      await flush(); await flush();
+    };
+    await submit(' 5/0 ', 'Kolinsky detail');
+    await submit('B02001', 'Detail 1, worn');
+    const brushes = (await deps.repo.getInventory()).brushes;
+    expect(brushes).toHaveLength(4);
+    expect(brushes[0]).toEqual({ code: 'B02001', name: 'Detail 1, worn' });
+    expect(brushes[3]).toEqual({ code: '5/0', name: 'Kolinsky detail' });
+  });
+
+  it('links to adding paints from a photo', async () => {
+    const root = mount();
+    await renderInventory(root, await makeDeps());
+    expect(root.querySelector('[data-testid="scan-paints"]')!.getAttribute('href')).toBe('#/scan');
+  });
 });

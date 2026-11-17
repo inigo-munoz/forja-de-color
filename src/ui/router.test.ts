@@ -8,6 +8,7 @@ describe('parseRoute', () => {
     ['#/ask/p1', { name: 'ask', id: 'p1' }],
     ['#/inventory', { name: 'inventory' }],
     ['#/settings', { name: 'settings' }],
+    ['#/scan', { name: 'scan' }],
     ['#/wheel', { name: 'wheel' }],
     ['#/wheel/red', { name: 'wheel', colour: 'red' }],
     ['#/wheel/nope', { name: 'wheel' }],
