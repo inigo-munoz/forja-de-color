@@ -2,6 +2,24 @@
 export const copy = {
   appName: 'Forja de Color',
   nav: { projects: 'Projects', inventory: 'My paints', wheel: 'Colours', settings: 'Settings' },
+  look: {
+    title: 'Painting style',
+    style: 'Style',
+    base: 'Base',
+    noBase: 'No setting',
+    styles: {
+      'my-method': { name: 'My method', help: 'Quick and showy: BSL and slapchop.' },
+      nmm: { name: 'NMM (non-metallic metal)', help: 'Metal faked with light and shadow only.' },
+      osl: { name: 'OSL (object source lighting)', help: 'A light of its own tints what is around it.' },
+      vivid: { name: 'Vivid · High-Fantasy', help: 'Bright, saturated colours, like an animated film.' },
+      grimdark: { name: 'Grimdark', help: 'Wear, dirt and battle damage.' },
+    },
+    bases: {
+      winter: { name: 'Winter', help: 'Snow, ice and cold tones.' },
+      desert: { name: 'Desert', help: 'Sand, dry earth and warm tones.' },
+      fantasy: { name: 'Fantasy', help: 'Magical, unreal colours.' },
+    },
+  },
   wheel: {
     title: 'Colour theory',
     hint: 'Tap a colour to see its harmonies and which of your paints match.',

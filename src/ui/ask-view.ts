@@ -2,7 +2,9 @@ import { buildAdvicePackage } from '../advice/package';
 import { parseAdviceResponse } from '../advice/parse';
 import type { AdviceRequest, Moment, Question } from '../advice/schema';
 import { resizeImage } from '../platform/image';
-import { addAdvice, type Project } from '../projects/project';
+import { addAdvice, setLook, type Project } from '../projects/project';
+import { lookOf } from '../projects/style';
+import { lookFields } from './look-fields';
 import { copy } from './copy';
 import { h, show, type Deps } from './dom';
 
@@ -31,6 +33,11 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
     ...MOMENTS.map((m, i) =>
       h('label', {}, h('input', { type: 'radio', name: 'moment', value: m, checked: i === 0 }), ` ${copy.ask.moments[m]}`)));
 
+  const look = lookFields(lookOf(project), async (l) => {
+    const latest = (await deps.repo.getProject(id)) ?? project;
+    await deps.repo.saveProject(setLook(latest, l));
+  });
+
   const zoneSelect = h('select', { 'data-testid': 'zone' }, ...recipeZones(project).map((z) => h('option', { value: z }, z)));
   const zoneText = h('input', { placeholder: copy.ask.zone, 'data-testid': 'zone-text' });
   const question = h('select', { 'data-testid': 'question' }, ...QUESTIONS.map((q) => h('option', { value: q }, copy.ask.questions[q])));
@@ -58,7 +65,9 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
     const req: AdviceRequest = moment === 'during'
       ? { moment, zone: zoneText.value.trim() || zoneSelect.value, question: question.value as Question, freeText: details.value.trim() || undefined }
       : { moment };
-    const pkg = buildAdvicePackage(req, await deps.repo.getInventory(), photo);
+    // The project's look as saved now: it may have been changed on this screen.
+    const look = lookOf((await deps.repo.getProject(id)) ?? project);
+    const pkg = buildAdvicePackage({ ...req, ...look }, await deps.repo.getInventory(), photo);
     const result = await deps.bridge.send(pkg);
     const fallback = result === 'fallback';
     sendStatus.textContent = fallback ? `${copy.ask.fallback} ${copy.ask.promptBox}` : '';
@@ -105,6 +114,7 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
     h('h2', {}, `${copy.ask.title} · ${project.name}`),
     h('section', { class: 'card' },
       momentField,
+      look,
       duringFields,
       h('label', {}, copy.ask.photo, photoInput),
       h('button', { 'data-testid': 'send', onclick: () => void send() }, copy.ask.send),

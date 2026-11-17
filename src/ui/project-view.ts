@@ -1,3 +1,5 @@
+import { lookOf } from '../projects/style';
+import { lookFields } from './look-fields';
 import { buildImagePrompt } from '../advice/image-prompt';
 import { neededPaints } from '../advice/parse';
 import { assignUnknownPaint } from '../advice/resolve';
@@ -5,7 +7,7 @@ import type { AdviceEntry, ConsultationResponse, RecipeResponse, ZoneRecipe } fr
 import { findPaint } from '../paints/inventory';
 import type { Inventory, PaintRef } from '../paints/paint';
 import { paintKey } from '../paints/paint';
-import { addProgressPhoto, markDone, reopen, setNotes, setZoneDone, type Project } from '../projects/project';
+import { addProgressPhoto, markDone, reopen, setLook, setNotes, setZoneDone, type Project } from '../projects/project';
 import { copy } from './copy';
 import { blobUrl, h, show, swatch, type Deps } from './dom';
 import { storePhoto } from './photos';
@@ -162,7 +164,7 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
             const blobId = project.initialPhotoBlobId;
             const photo = blobId ? await deps.repo.getBlob(blobId) : undefined;
             if (!photo || e.response.kind !== 'recipe') return;
-            const result = await deps.bridge.send({ text: buildImagePrompt(e.response, inv), image: photo });
+            const result = await deps.bridge.send({ text: buildImagePrompt(e.response, inv, lookOf(project)), image: photo });
             imageStatus.textContent = result === 'fallback' ? copy.project.paintImageFallback : copy.project.paintImageSent;
           },
         }, copy.project.paintImage)
@@ -185,6 +187,7 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
       h('a', { href: `#/ask/${encodeURIComponent(project.id)}`, class: 'button' }, copy.project.ask),
       h('button', { 'data-testid': 'toggle-done', onclick: () => void update((p) => (p.status === 'done' ? reopen(p) : markDone(p))) },
         project.status === 'done' ? copy.project.reopen : copy.project.markDone)),
+    lookFields(lookOf(project), (look) => void update((p) => setLook(p, look))),
     ...[...project.advice].reverse().map(entryView),
     h('section', { class: 'card' }, h('h3', {}, copy.project.notes), notes),
     h('section', { class: 'card' }, h('h3', {}, copy.project.progress), h('div', { class: 'thumbs' }, ...progress),

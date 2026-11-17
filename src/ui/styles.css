@@ -40,3 +40,4 @@ img.photo { max-width: 100%; border-radius: 10px; }
 .wheel .sector { cursor: pointer; stroke: var(--bg); stroke-width: 1; }
 .wheel .sector.selected { stroke: var(--text); stroke-width: 3; }
 .wheel .sector:focus-visible { outline: none; stroke: var(--accent); stroke-width: 3; }
+.look select { display: block; margin-top: .25rem; }
