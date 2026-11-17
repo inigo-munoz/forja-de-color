@@ -51,8 +51,10 @@ describe('paint catalogue', () => {
     expect(type('Vallejo', '70.939')).toBe('ink');
     expect(type('Vallejo', '72.091')).toBe('ink');
     // Checked against Vallejo's official charts: lines the name alone does not reveal.
-    expect(['72.060', '72.082', '72.103', '72.131', '70.800', '70.934', '70.831'].map((c) => type('Vallejo', c)))
-      .toEqual(['metallic', 'ink', 'other', 'other', 'metallic', 'other', 'wash']);
+    expect(['72.060', '72.082', '72.103', '72.131', '70.800', '70.934', '70.831', '62.031'].map((c) => type('Vallejo', c)))
+      .toEqual(['metallic', 'ink', 'other', 'other', 'metallic', 'ink', 'wash', 'other']);
+    expect(type('Citadel', 'Golden Griffon')).toBe('metallic');
+    expect(type('Citadel', 'Munitorum Varnish')).toBe('medium');
     expect(type('Citadel', 'Leadbelcher')).toBe('metallic');
     expect(type('Citadel', 'Steel Legion Drab')).toBe('opaque');
     expect(type('Vallejo', '70.987')).toBe('opaque');
