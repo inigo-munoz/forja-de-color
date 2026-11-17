@@ -13,7 +13,8 @@ const CARDS = ['slapchop', 'dilution', 'bsl', 'drybrush'];
 // Markers that only appear in the prompt we send, never in a real answer.
 const PROMPT_MARKERS = ['ANSWER FORMAT', 'INVENTORY (brand|code'];
 
-function extractJson(raw: string): string | null {
+/** The JSON in an AI answer: a fenced block, or from the first { to the last }. Shared with the scan parser. */
+export function extractJson(raw: string): string | null {
   const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fence) return fence[1].trim();
   const start = raw.indexOf('{');
