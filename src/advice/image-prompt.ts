@@ -1,4 +1,4 @@
-import { imageLookLines, type Look } from '../projects/style';
+import { imageLookLines, themedBase, type Look } from '../projects/style';
 import { findPaint } from '../paints/inventory';
 import type { Inventory, PaintRef } from '../paints/paint';
 import type { RecipeResponse } from './schema';
@@ -20,7 +20,10 @@ export function buildImagePrompt(recipe: RecipeResponse, inv: Inventory, look: L
     return z.paint ? `- ${z.name}: ${describe(inv, z.paint)}` : `- ${z.name}: keep as it is`;
   });
   return [
-    'Edit the attached photo of a miniature so it looks painted. Keep the exact pose, sculpt, base and framing: do not add, remove or reshape anything.',
+    // With a themed base, terrain may be added on the base, so this line protects only the miniature.
+    themedBase(look)
+      ? 'Edit the attached photo of a miniature so it looks painted. Keep the exact pose, sculpt and framing of the miniature: do not add, remove or reshape anything on it.'
+      : 'Edit the attached photo of a miniature so it looks painted. Keep the exact pose, sculpt, base and framing: do not add, remove or reshape anything.',
     'Style: tabletop-quality "slapchop" painting — strong light and shadow from a white drybrush over black primer, with translucent colour on top; detail zones (faces, skin) with smooth base / shadow / highlight.',
     ...imageLookLines(look),
     'Paint each zone with these colours:',

@@ -75,6 +75,9 @@ export function adviceLookLines(look: Look): string[] {
 const BASE_MATERIALS = 'BASE MATERIALS: you may also recommend basing materials for this base (sand, static grass, snow, pigments, tufts…) in a top-level "baseMaterials" list of short strings; I may not have them.';
 const IMAGE_TERRAIN = 'On the base only, you may add terrain that fits it (snow, rocks, plants, effects); leave the miniature itself exactly as it is.';
 
+/** The base has a setting or a motif: the advisor may suggest materials and the image may add terrain. */
+export const themedBase = (look: Look): boolean => !!look.baseSetting || !!cleanMotif(look.baseMotif);
+
 /** Lines for the image prompt; empty for my method without a base setting. */
 export function imageLookLines(look: Look): string[] {
   const lines: string[] = [];

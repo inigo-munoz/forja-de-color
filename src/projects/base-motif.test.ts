@@ -4,7 +4,7 @@ import { buildImagePrompt } from '../advice/image-prompt';
 import { parseAdviceResponse } from '../advice/parse';
 import type { RecipeResponse } from '../advice/schema';
 import { createProject, setLook } from './project';
-import { lookOf } from './style';
+import { adviceLookLines, cleanMotif, imageLookLines, lookOf } from './style';
 
 const photo = new Blob(['x']);
 const recipe: RecipeResponse = {
@@ -33,6 +33,10 @@ describe('base motif', () => {
     expect(text).toContain('Base theme: lava.');
     expect(text).toContain('On the base only, you may add terrain');
     expect(plain).not.toContain('On the base only');
+    // No contradiction: with a themed base the first line protects the miniature, not the base.
+    expect(text).toContain('Keep the exact pose, sculpt and framing of the miniature: do not add, remove or reshape anything on it.');
+    expect(text).not.toContain('pose, sculpt, base and framing');
+    expect(plain).toContain('Keep the exact pose, sculpt, base and framing: do not add, remove or reshape anything.');
   });
 
   it('reads basing materials from the answer, and rejects a malformed list', () => {
@@ -40,5 +44,13 @@ describe('base motif', () => {
     expect(ok.ok && ok.entry.response.kind === 'recipe' && ok.entry.response.baseMaterials).toEqual(['arena fina', 'nieve artificial']);
     const bad = parseAdviceResponse(JSON.stringify({ ...recipe, baseMaterials: 'arena' }), SEED_INVENTORY);
     expect(bad.ok ? [] : bad.errors).toContain('recipe: baseMaterials must be a list of materials');
+  });
+
+  it('a blank motif adds no prompt lines, and cleaning cuts long motifs and final dots', () => {
+    expect(adviceLookLines({ style: 'my-method', baseMotif: '   ' })).toEqual([]);
+    expect(imageLookLines({ style: 'my-method', baseMotif: '' })).toEqual([]);
+    expect(cleanMotif('  lava...  ')).toBe('lava');
+    expect(cleanMotif(' ... ')).toBeUndefined();
+    expect(cleanMotif('a'.repeat(100) + '. x')).toBe('a'.repeat(100));
   });
 });
