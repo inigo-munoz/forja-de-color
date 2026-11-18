@@ -1,7 +1,7 @@
 import { MAX_ANGLES, createProject } from '../projects/project';
 import { copy } from './copy';
 import { blobUrl, h, show, type Deps } from './dom';
-import { storePhotos } from './photos';
+import { resizeImage } from '../platform/image';
 
 export async function renderProjects(root: HTMLElement, deps: Deps): Promise<void> {
   const projects = await deps.repo.listProjects();
@@ -19,19 +19,46 @@ export async function renderProjects(root: HTMLElement, deps: Deps): Promise<voi
     }),
   );
 
+  // Several angles of the miniature, each shown with a remove button; the first is the main photo.
+  const pending: Blob[] = [];
+  const thumbs = h('div', { class: 'thumbs', 'data-testid': 'new-project-photos' });
+  const full = h('p', { class: 'hint', 'data-testid': 'new-project-photos-full', hidden: true }, copy.projects.photosFull);
+  const choose = h('input', { name: 'photo', type: 'file', accept: 'image/*', multiple: true });
+  const refresh = () => {
+    thumbs.replaceChildren(...pending.map((blob, i) => h('figure', { 'data-testid': 'new-project-photo' },
+      h('img', { src: URL.createObjectURL(blob), alt: '' }),
+      h('button', {
+        type: 'button', class: 'secondary', 'data-testid': 'new-project-photo-remove',
+        onclick: () => { pending.splice(i, 1); refresh(); },
+      }, copy.projects.removePhoto))));
+    const isFull = pending.length > MAX_ANGLES;
+    choose.disabled = isFull;
+    full.hidden = !isFull;
+  };
+  // Each pick adds to the list (camera or gallery, one or several at a time): no capture attribute, so
+  // the gallery stays available.
+  choose.addEventListener('change', async () => {
+    for (const file of [...(choose.files ?? [])]) {
+      if (pending.length > MAX_ANGLES) break;
+      pending.push(await (deps.resize ?? resizeImage)(file));
+    }
+    choose.value = '';
+    refresh();
+  });
+
   const form = h('form', { 'data-testid': 'new-project', class: 'card' },
     h('h3', {}, copy.projects.new),
     h('label', {}, copy.projects.name, h('input', { name: 'name', required: true })),
-    h('label', {}, copy.projects.photo, h('input', { name: 'photo', type: 'file', accept: 'image/*', multiple: true })),
     h('p', { class: 'hint' }, copy.projects.anglesHelp),
+    h('label', { class: 'button secondary' }, copy.projects.choosePhotos, choose),
+    thumbs, full,
     h('button', { type: 'submit' }, copy.projects.create),
   );
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = (form.elements.namedItem('name') as HTMLInputElement).value.trim();
     if (!name) return;
-    // Several angles at once: the first is the main photo, the rest are angles.
-    const [main, ...angles] = await storePhotos(deps, form.elements.namedItem('photo') as HTMLInputElement, MAX_ANGLES + 1);
+    const [main, ...angles] = await Promise.all(pending.slice(0, MAX_ANGLES + 1).map((b) => deps.repo.putBlob(b)));
     const project = {
       ...createProject(name, deps.now(), crypto.randomUUID()),
       ...(main && { initialPhotoBlobId: main }),

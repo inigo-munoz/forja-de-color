@@ -65,8 +65,10 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
     if (moment === 'half-painted' && !photoInput.files?.length && !latest.progress.length) {
       return void (sendStatus.textContent = copy.ask.currentPhoto);
     }
-    // Start and primed see the unpainted miniature from every angle; later moments the current photo.
-    const allAngles = !photoInput.files?.length && (moment === 'start' || moment === 'primed')
+    // Start and primed see the unpainted miniature from every angle, while there are angles and no progress
+    // photo yet; otherwise the photo sent is the one it always was (latest progress, else main).
+    const unpainted = !!latest.extraPhotoBlobIds?.length && !latest.progress.length;
+    const allAngles = !photoInput.files?.length && unpainted && (moment === 'start' || moment === 'primed')
       ? (await Promise.all(photosOf(latest).map((pid) => deps.repo.getBlob(pid)))).filter((b): b is Blob => !!b)
       : [];
     const photo = allAngles[0] ?? await pickPhoto(deps, photoInput, latest);

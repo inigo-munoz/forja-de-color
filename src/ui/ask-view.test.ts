@@ -165,4 +165,18 @@ describe('ask view — review fixes', () => {
     expect(pkg.image.size).toBe(5);
     expect(pkg.extraImages.map((b: Blob) => b.size)).toEqual([4]);
   });
+
+  it('primed without angles sends the latest progress photo, as before', async () => {
+    const { deps, root } = await setup();
+    const p = (await deps.repo.getProject('p1'))!;
+    const prog = await deps.repo.putBlob(new Blob(['primed!'], { type: 'image/jpeg' }));
+    await deps.repo.saveProject({ ...p, progress: [{ id: 'g1', takenAt: '2026-11-12T10:00:00.000Z', blobId: prog }] });
+    await renderAsk(root, deps, 'p1');
+    choose(root, 'primed');
+    click(root, 'send');
+    await ticks();
+    const pkg = deps.bridge.send.mock.calls[0][0];
+    expect(pkg.image.size).toBe(7);
+    expect(pkg.extraImages).toBeUndefined();
+  });
 });

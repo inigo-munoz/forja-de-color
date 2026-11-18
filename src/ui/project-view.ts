@@ -137,7 +137,9 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
           onclick: async () => {
             if (!window.confirm(copy.project.deleteAngleConfirm)) return;
             await update((p) => removeAngle(p, id));
-            await deps.repo.deleteBlob(id);
+            // Only when no project uses it any more (one restored from a backup may share it).
+            const used = (await deps.repo.listProjects()).some((p) => [p.initialPhotoBlobId, ...(p.extraPhotoBlobIds ?? []), p.targetImageBlobId, ...p.progress.map((x) => x.blobId)].includes(id));
+            if (!used) await deps.repo.deleteBlob(id);
           },
         }, copy.project.deleteAngle)))),
       (project.extraPhotoBlobIds?.length ?? 0) < MAX_ANGLES ? h('label', { class: 'button' }, copy.project.addAngle, angleInput) : null)

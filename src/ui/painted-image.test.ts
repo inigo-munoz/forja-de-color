@@ -60,6 +60,23 @@ describe('angles', () => {
   });
 });
 
+describe('angles shared with another project', () => {
+  it('removing an angle keeps its photo when another project uses it', async () => {
+    const { deps, root } = await setup(false);
+    const shared = await deps.repo.putBlob(new Blob(['shared'], { type: 'image/jpeg' }));
+    const p = (await deps.repo.getProject('p1'))!;
+    await deps.repo.saveProject({ ...p, extraPhotoBlobIds: [shared] });
+    await deps.repo.saveProject({ ...createProject('Otro', deps.now(), 'p2'), initialPhotoBlobId: shared });
+    const { renderProject } = await import('./project-view');
+    await renderProject(root, deps, 'p1');
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
+    root.querySelector<HTMLButtonElement>('[data-testid="delete-angle"]')!.click();
+    await ticks();
+    expect((await deps.repo.getProject('p1'))!.extraPhotoBlobIds).toBeUndefined();
+    expect(await deps.repo.getBlob(shared)).toBeDefined();
+  });
+});
+
 describe('before / after comparison', () => {
   it('appears only when both the photo and the painted image exist', async () => {
     expect((await setup(false)).root.querySelector('[data-testid="compare"]')).toBeNull();
