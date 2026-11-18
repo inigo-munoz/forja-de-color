@@ -24,6 +24,22 @@ describe('projects view', () => {
     expect(deps.navigate).toHaveBeenCalledWith(`#/project/${p.id}`);
   });
 
+  it('several photos at once: the first is the main one, up to three more are angles', async () => {
+    const deps = await makeDeps({ resize: vi.fn(async (f: Blob) => f) });
+    const root = mount();
+    await renderProjects(root, deps);
+    const form = root.querySelector<HTMLFormElement>('[data-testid="new-project"]')!;
+    (form.elements.namedItem('name') as HTMLInputElement).value = 'Búho';
+    const input = form.elements.namedItem('photo') as HTMLInputElement;
+    expect(input.multiple).toBe(true);
+    Object.defineProperty(input, 'files', { value: ['1', '22', '333', '4444', '55555'].map((b) => new File([b], 'p.jpg', { type: 'image/jpeg' })) });
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    for (let i = 0; i < 12; i++) await flush();
+    const [p] = await deps.repo.listProjects();
+    const sizes = await Promise.all([p.initialPhotoBlobId!, ...p.extraPhotoBlobIds!].map(async (id) => (await deps.repo.getBlob(id))!.size));
+    expect(sizes).toEqual([1, 2, 3, 4]);
+  });
+
   it('lists projects in progress before finished ones', async () => {
     const deps = await makeDeps();
     await deps.repo.saveProject(markDone(createProject('Terminada', deps.now(), 'a')));

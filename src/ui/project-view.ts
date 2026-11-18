@@ -7,7 +7,7 @@ import type { AdviceEntry, ConsultationResponse, RecipeResponse, ZoneRecipe } fr
 import { findPaint } from '../paints/inventory';
 import type { Inventory, PaintRef } from '../paints/paint';
 import { paintKey } from '../paints/paint';
-import { addProgressPhoto, markDone, reopen, setLook, setNotes, setZoneDone, type Project } from '../projects/project';
+import { MAX_ANGLES, addAngle, addProgressPhoto, markDone, removeAngle, reopen, setLook, setNotes, setZoneDone, type Project } from '../projects/project';
 import { copy } from './copy';
 import { blobUrl, h, show, swatch, type Deps } from './dom';
 import { storePhoto } from './photos';
@@ -121,6 +121,28 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
   notes.addEventListener('blur', () => void saveNotes());
   window.addEventListener('pagehide', () => void saveNotes(), { once: true });
 
+  // Angles of the unpainted miniature, besides the main photo (up to MAX_ANGLES).
+  const angleInput = h('input', { type: 'file', accept: 'image/*', 'data-testid': 'add-angle' });
+  angleInput.addEventListener('change', async () => {
+    const blobId = await storePhoto(deps, angleInput);
+    if (blobId) await update((p) => addAngle(p, blobId));
+  });
+  const angleUrls = await Promise.all((project.extraPhotoBlobIds ?? []).map(async (id) => [id, await blobUrl(deps, id)] as const));
+  const angles = project.initialPhotoBlobId
+    ? h('section', { class: 'card', 'data-testid': 'angles' }, h('h3', {}, copy.project.angles),
+      h('div', { class: 'thumbs' }, ...angleUrls.map(([id, url]) => h('figure', { 'data-testid': 'angle-photo' },
+        url ? h('img', { src: url, alt: '' }) : null,
+        h('button', {
+          type: 'button', class: 'secondary', 'data-testid': 'delete-angle',
+          onclick: async () => {
+            if (!window.confirm(copy.project.deleteAngleConfirm)) return;
+            await update((p) => removeAngle(p, id));
+            await deps.repo.deleteBlob(id);
+          },
+        }, copy.project.deleteAngle)))),
+      (project.extraPhotoBlobIds?.length ?? 0) < MAX_ANGLES ? h('label', { class: 'button' }, copy.project.addAngle, angleInput) : null)
+    : null;
+
   const progressInput = h('input', { type: 'file', accept: 'image/*', 'data-testid': 'add-progress' });
   progressInput.addEventListener('change', async () => {
     const blobId = await storePhoto(deps, progressInput);
@@ -190,6 +212,7 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
     lookFields(lookOf(project), (look) => void update((p) => setLook(p, look))),
     ...[...project.advice].reverse().map(entryView),
     h('section', { class: 'card' }, h('h3', {}, copy.project.notes), notes),
+    angles,
     h('section', { class: 'card' }, h('h3', {}, copy.project.progress), h('div', { class: 'thumbs' }, ...progress),
       h('label', { class: 'button' }, copy.project.addProgress, progressInput)),
     h('section', { class: 'card' }, h('h3', {}, copy.project.target), target ? h('img', { src: target, alt: '', class: 'photo' }) : null,

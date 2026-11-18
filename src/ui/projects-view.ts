@@ -1,7 +1,7 @@
-import { createProject } from '../projects/project';
+import { MAX_ANGLES, createProject } from '../projects/project';
 import { copy } from './copy';
 import { blobUrl, h, show, type Deps } from './dom';
-import { storePhoto } from './photos';
+import { storePhotos } from './photos';
 
 export async function renderProjects(root: HTMLElement, deps: Deps): Promise<void> {
   const projects = await deps.repo.listProjects();
@@ -22,15 +22,21 @@ export async function renderProjects(root: HTMLElement, deps: Deps): Promise<voi
   const form = h('form', { 'data-testid': 'new-project', class: 'card' },
     h('h3', {}, copy.projects.new),
     h('label', {}, copy.projects.name, h('input', { name: 'name', required: true })),
-    h('label', {}, copy.projects.photo, h('input', { name: 'photo', type: 'file', accept: 'image/*' })),
+    h('label', {}, copy.projects.photo, h('input', { name: 'photo', type: 'file', accept: 'image/*', multiple: true })),
+    h('p', { class: 'hint' }, copy.projects.anglesHelp),
     h('button', { type: 'submit' }, copy.projects.create),
   );
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = (form.elements.namedItem('name') as HTMLInputElement).value.trim();
     if (!name) return;
-    const photoId = await storePhoto(deps, form.elements.namedItem('photo') as HTMLInputElement);
-    const project = { ...createProject(name, deps.now(), crypto.randomUUID()), ...(photoId && { initialPhotoBlobId: photoId }) };
+    // Several angles at once: the first is the main photo, the rest are angles.
+    const [main, ...angles] = await storePhotos(deps, form.elements.namedItem('photo') as HTMLInputElement, MAX_ANGLES + 1);
+    const project = {
+      ...createProject(name, deps.now(), crypto.randomUUID()),
+      ...(main && { initialPhotoBlobId: main }),
+      ...(angles.length && { extraPhotoBlobIds: angles }),
+    };
     await deps.repo.saveProject(project);
     deps.navigate(`#/project/${encodeURIComponent(project.id)}`);
   });

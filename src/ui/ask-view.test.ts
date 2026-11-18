@@ -152,4 +152,17 @@ describe('ask view — review fixes', () => {
     expect(text).toContain('PREVIOUS RECIPE');
     expect(text).toContain('- capa (slapchop): Azul Mágico (Vallejo 72.021). Painted.');
   });
+
+  it('start sends the main photo and every angle', async () => {
+    const { deps, root } = await setup();
+    const p = (await deps.repo.getProject('p1'))!;
+    const a = await deps.repo.putBlob(new Blob(['side'], { type: 'image/jpeg' }));
+    await deps.repo.saveProject({ ...p, extraPhotoBlobIds: [a] });
+    await renderAsk(root, deps, 'p1');
+    click(root, 'send');
+    await ticks();
+    const pkg = deps.bridge.send.mock.calls[0][0];
+    expect(pkg.image.size).toBe(5);
+    expect(pkg.extraImages.map((b: Blob) => b.size)).toEqual([4]);
+  });
 });

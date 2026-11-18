@@ -2,7 +2,7 @@ import { buildAdvicePackage } from '../advice/package';
 import { parseAdviceResponse } from '../advice/parse';
 import type { AdviceRequest, Moment, Question } from '../advice/schema';
 import { resizeImage } from '../platform/image';
-import { addAdvice, setLook, type Project } from '../projects/project';
+import { addAdvice, photosOf, setLook, type Project } from '../projects/project';
 import { lookOf } from '../projects/style';
 import { lookFields } from './look-fields';
 import { copy } from './copy';
@@ -65,7 +65,11 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
     if (moment === 'half-painted' && !photoInput.files?.length && !latest.progress.length) {
       return void (sendStatus.textContent = copy.ask.currentPhoto);
     }
-    const photo = await pickPhoto(deps, photoInput, latest);
+    // Start and primed see the unpainted miniature from every angle; later moments the current photo.
+    const allAngles = !photoInput.files?.length && (moment === 'start' || moment === 'primed')
+      ? (await Promise.all(photosOf(latest).map((pid) => deps.repo.getBlob(pid)))).filter((b): b is Blob => !!b)
+      : [];
+    const photo = allAngles[0] ?? await pickPhoto(deps, photoInput, latest);
     if (!photo) return void (sendStatus.textContent = copy.ask.photo);
     const recipe = [...latest.advice].reverse().find((e) => e.response.kind === 'recipe');
     const req: AdviceRequest = moment === 'during'
@@ -75,7 +79,7 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
         : { moment };
     // The project's look as saved now: it may have been changed on this screen.
     const look = lookOf(latest);
-    const pkg = buildAdvicePackage({ ...req, ...look }, await deps.repo.getInventory(), photo);
+    const pkg = { ...buildAdvicePackage({ ...req, ...look }, await deps.repo.getInventory(), photo), ...(allAngles.length > 1 && { extraImages: allAngles.slice(1) }) };
     const result = await deps.bridge.send(pkg);
     const fallback = result === 'fallback';
     sendStatus.textContent = fallback ? `${copy.ask.fallback} ${copy.ask.promptBox}` : copy.ask.pasteHint;
