@@ -16,7 +16,7 @@ export interface BackupFile {
 const DAY_MS = 86_400_000;
 
 function blobIdsOf(p: Project): string[] {
-  return [p.initialPhotoBlobId, p.targetImageBlobId, ...p.progress.map((x) => x.blobId)].filter(
+  return [p.initialPhotoBlobId, ...(p.extraPhotoBlobIds ?? []), p.targetImageBlobId, ...p.progress.map((x) => x.blobId)].filter(
     (id): id is string => typeof id === 'string',
   );
 }
@@ -89,6 +89,11 @@ export function validateBackup(file: unknown): string | null {
     return ('style' in o && !isPaintingStyle(o.style)) || ('baseSetting' in o && !isBaseSetting(o.baseSetting));
   });
   if (badLook >= 0) return `project #${badLook + 1} has an unknown painting style or base setting`;
+  const badAngles = file.projects.findIndex((p) => {
+    const o = p as Record<string, unknown>;
+    return 'extraPhotoBlobIds' in o && !(Array.isArray(o.extraPhotoBlobIds) && o.extraPhotoBlobIds.every((x) => typeof x === 'string'));
+  });
+  if (badAngles >= 0) return `project #${badAngles + 1} has invalid extra photos`;
   const doneZonesError = file.projects.map((p, i) => doneZonesProblem(p as Record<string, unknown>, i)).find((e) => e !== null);
   if (doneZonesError) return doneZonesError;
   if (!isObj(file.blobs)) return 'backup has no valid photos';

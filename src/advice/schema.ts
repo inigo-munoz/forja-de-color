@@ -67,4 +67,6 @@ export interface AdviceRequest extends Look {
 export interface AdvicePackage {
   text: string;
   image: Blob;
+  /** More angles of the miniature, shared after the main image. */
+  extraImages?: Blob[];
 }

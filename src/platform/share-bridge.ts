@@ -19,19 +19,22 @@ export function createShareBridge(env: Env = {}): AdvisorBridge {
     } catch {
       // Clipboard denied: the UI still shows the prompt to copy by hand.
     }
-    const url = URL.createObjectURL(pkg.image);
-    const a = doc.createElement('a');
-    a.href = url;
-    a.download = 'forja-de-color.jpg';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    [pkg.image, ...(pkg.extraImages ?? [])].forEach((img, i) => {
+      const url = URL.createObjectURL(img);
+      const a = doc.createElement('a');
+      a.href = url;
+      a.download = i === 0 ? 'forja-de-color.jpg' : `forja-de-color-${i + 1}.jpg`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
     return 'fallback';
   }
 
   return {
     async send(pkg) {
-      const file = new File([pkg.image], 'forja-de-color.jpg', { type: pkg.image.type || 'image/jpeg' });
-      const data: ShareData = { text: pkg.text, files: [file] };
+      const files = [pkg.image, ...(pkg.extraImages ?? [])].map((img, i) =>
+        new File([img], i === 0 ? 'forja-de-color.jpg' : `forja-de-color-${i + 1}.jpg`, { type: img.type || 'image/jpeg' }));
+      const data: ShareData = { text: pkg.text, files };
       if (typeof nav.share === 'function' && nav.canShare?.(data)) {
         // Some share targets keep the image and drop the text: keep the prompt on the clipboard too.
         try {
