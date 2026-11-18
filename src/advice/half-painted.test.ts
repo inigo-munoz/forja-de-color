@@ -47,4 +47,13 @@ describe('advice prompt for a miniature already started', () => {
     expect(buildAdvicePackage({ moment: 'start', previous: { response: recipe } }, SEED_INVENTORY, photo).text).not.toContain('PREVIOUS RECIPE');
     expect(buildAdvicePackage({ moment: 'half-painted' }, SEED_INVENTORY, photo).text).not.toContain('PREVIOUS RECIPE');
   });
+
+  it('half-painted asks to review and finish, not to repaint: fixes only where needed, steps for what is left', () => {
+    const text = buildAdvicePackage({ moment: 'half-painted' }, SEED_INVENTORY, photo).text;
+    expect(text).toContain('I do not want to repaint it');
+    expect(text).toContain('Review the zones already painted');
+    expect(text).toContain('only when something clearly needs it');
+    expect(text).toContain('steps to finish the zones that are left');
+    expect(text).toContain('their steps are only the touch-ups they need, or empty');
+  });
 });

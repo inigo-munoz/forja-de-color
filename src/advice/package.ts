@@ -30,7 +30,7 @@ const RECIPE_FORMAT = (moment: 'start' | 'primed' | 'half-painted') => `ANSWER F
   "tips": ["..."]${moment === 'half-painted' ? `,
   "complements": [{ "brand": "Vallejo", "code": "72.008" }],
   "remainingSteps": ["..."]
-  (mark zones that are already painted with "alreadyPainted": true)` : ''}
+  (mark zones already painted with "alreadyPainted": true; their steps are only the touch-ups they need, or empty)` : ''}
 }`;
 
 const CONSULTATION_FORMAT = `ANSWER FORMAT: reply with JSON only, in one \`\`\`json block, exactly this shape:
@@ -64,7 +64,7 @@ function momentRequest(req: AdviceRequest): string {
     case 'primed':
       return 'MOMENT: primed. The photo shows my miniature already primed in black with the grey and white drybrush done. Skip priming and drybrushing (leave prep empty) and give me a palette by zones, starting from the colour layers.';
     case 'half-painted':
-      return 'MOMENT: half-painted. The photo shows my miniature partly painted. Say which zones are already painted, propose complementary colours and the steps left to finish it.';
+      return 'MOMENT: half-painted. The photo shows my miniature partly painted and I want to finish it: I do not want to repaint it. Review the zones already painted and suggest a fix (a wash, a glaze, a highlight) only when something clearly needs it; then give the steps to finish the zones that are left, with colours that match what is already painted.';
     case 'during':
       return `MOMENT: during. Zone: "${req.zone ?? ''}". Question: ${req.question ?? 'free'}.${req.freeText ? ` Details: ${req.freeText}` : ''} Tell me which technique to use and how, for that zone only.`;
   }
