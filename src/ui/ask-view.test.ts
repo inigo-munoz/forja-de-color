@@ -179,4 +179,29 @@ describe('ask view — review fixes', () => {
     expect(pkg.image.size).toBe(7);
     expect(pkg.extraImages).toBeUndefined();
   });
+
+  it('the project photos are chosen in a panel; half-painted starts with the latest progress photo', async () => {
+    const { deps, root } = await setup();
+    const p = (await deps.repo.getProject('p1'))!;
+    const old = await deps.repo.putBlob(new Blob(['old'], { type: 'image/jpeg' }));
+    const now = await deps.repo.putBlob(new Blob(['now!!!'], { type: 'image/jpeg' }));
+    await deps.repo.saveProject({ ...p, progress: [{ id: 'g1', takenAt: '2026-11-12T10:00:00.000Z', blobId: old }, { id: 'g2', takenAt: '2026-11-14T10:00:00.000Z', blobId: now }] });
+    await renderAsk(root, deps, 'p1');
+    choose(root, 'half-painted');
+    expect(root.querySelectorAll('[data-testid="ask-chosen-photo"]')).toHaveLength(1);
+    expect(root.querySelector<HTMLElement>('[data-testid="ask-project-photos"]')!.hidden).toBe(true);
+
+    click(root, 'ask-choose-project-photo');
+    const tiles = root.querySelectorAll<HTMLButtonElement>('[data-testid="ask-project-photo"]');
+    expect(tiles).toHaveLength(3);
+    expect(tiles[0].getAttribute('aria-pressed')).toBe('true');
+    tiles[1].click();
+    click(root, 'ask-project-photos-done');
+    expect(root.querySelectorAll('[data-testid="ask-chosen-photo"]')).toHaveLength(2);
+
+    click(root, 'send');
+    await ticks();
+    const pkg = deps.bridge.send.mock.calls[0][0];
+    expect([pkg.image.size, ...pkg.extraImages.map((b: Blob) => b.size)]).toEqual([6, 3]);
+  });
 });

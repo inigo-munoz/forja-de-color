@@ -164,6 +164,11 @@ export const copy = {
     fallback: 'Prompt copied and image downloaded — paste both in your chat.',
     promptBox: 'If the prompt did not copy, copy it from here:',
     copyPrompt: 'Copy prompt',
+    chooseProjectPhoto: 'Choose a project photo',
+    addPhoto: 'Take or choose a photo',
+    chosenPhotos: 'Project photos that will be sent:',
+    choosePhotos: (n: number) => `Tap the project photos to send (up to ${n}).`,
+    done: 'Done',
     currentPhoto: 'For half-painted, take or choose a current photo of the miniature: the project only has the unpainted one.',
     // Claude keeps only the shared photo and drops the text; the instructions are on the clipboard.
     pasteHint: 'Instructions copied. If the chat only shows the photo, long-press the text box and tap Paste (or the clipboard suggestion on the keyboard).',
