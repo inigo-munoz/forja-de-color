@@ -70,7 +70,7 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
     const pkg = buildAdvicePackage({ ...req, ...look }, await deps.repo.getInventory(), photo);
     const result = await deps.bridge.send(pkg);
     const fallback = result === 'fallback';
-    sendStatus.textContent = fallback ? `${copy.ask.fallback} ${copy.ask.promptBox}` : '';
+    sendStatus.textContent = fallback ? `${copy.ask.fallback} ${copy.ask.promptBox}` : copy.ask.pasteHint;
     promptBox.value = pkg.text;
     promptBox.hidden = !fallback;
     copyPrompt.hidden = !fallback;

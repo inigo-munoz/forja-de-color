@@ -30,6 +30,7 @@ describe('painted image via ChatGPT', () => {
     const pkg = deps.bridge.send.mock.calls[0][0];
     expect(pkg.text).toContain('Verde Escorpena #4e8437');
     expect(pkg.image.size).toBe(3);
+    expect(root.querySelector('[data-entry="e1"]')!.textContent).toContain('Instructions copied');
   });
 
   it('explains how to bring the image back when the share sheet could not be used', async () => {

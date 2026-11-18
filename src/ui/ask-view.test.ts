@@ -123,4 +123,11 @@ describe('ask view — review fixes', () => {
     await ticks();
     expect(root.querySelector('[data-testid="answer-errors"]')?.textContent).toContain('QuotaExceededError');
   });
+
+  it('after sharing, says the instructions are copied and how to paste them, since Claude keeps only the photo', async () => {
+    const { root } = await setup();
+    click(root, 'send');
+    await ticks();
+    expect(root.querySelector('[role="status"]')!.textContent).toContain('Instructions copied');
+  });
 });

@@ -165,7 +165,7 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
             const photo = blobId ? await deps.repo.getBlob(blobId) : undefined;
             if (!photo || e.response.kind !== 'recipe') return;
             const result = await deps.bridge.send({ text: buildImagePrompt(e.response, inv, lookOf(project)), image: photo });
-            imageStatus.textContent = result === 'fallback' ? copy.project.paintImageFallback : copy.project.paintImageSent;
+            imageStatus.textContent = result === 'fallback' ? copy.project.paintImageFallback : `${copy.ask.pasteHint} ${copy.project.paintImageSent}`;
           },
         }, copy.project.paintImage)
       : null;

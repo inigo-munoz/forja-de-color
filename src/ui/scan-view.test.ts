@@ -43,6 +43,7 @@ describe('add from a photo', () => {
     $(root, 'scan-send').click();
     await ticks();
     expect(deps.bridge.send.mock.calls[0][0].text).toBe(buildScanPrompt());
+    expect($(root, 'scan-status').textContent).toContain('Instructions copied');
     expect(deps.bridge.send.mock.calls[0][0].image.size).toBe(5);
   });
 
