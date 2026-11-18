@@ -52,6 +52,8 @@ function recipeView(inv: Inventory, r: RecipeResponse, unknown: Set<string>, don
     ...r.zones.map((z, i) => zoneView(inv, z, unknown, i, done.has(i), onToggle)),
     r.complements?.length ? h('div', {}, h('h4', {}, copy.project.complements), h('ul', {}, ...r.complements.map((c) => h('li', {}, paintLabel(inv, c, unknown))))) : null,
     r.remainingSteps?.length ? h('div', {}, h('h4', {}, copy.project.remaining), list(r.remainingSteps)) : null,
+    // Beyond the paint inventory, for the base only: the owner may need to buy them.
+    r.baseMaterials?.length ? h('div', { 'data-testid': 'base-materials' }, h('h4', {}, copy.project.baseMaterials), list(r.baseMaterials)) : null,
     h('h4', {}, copy.project.tips), list(r.tips),
   ].filter((x): x is HTMLElement => x !== null);
 }

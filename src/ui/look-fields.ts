@@ -1,4 +1,4 @@
-import { BASE_SETTINGS, PAINTING_STYLES, isBaseSetting, isPaintingStyle, type Look } from '../projects/style';
+import { BASE_SETTINGS, MAX_MOTIF, PAINTING_STYLES, cleanMotif, isBaseSetting, isPaintingStyle, type Look } from '../projects/style';
 import { copy } from './copy';
 import { h } from './dom';
 
@@ -15,11 +15,13 @@ export function lookFields(look: Look, onChange: (look: Look) => void): HTMLElem
     h('option', { value: '' }, c.noBase),
     ...BASE_SETTINGS.map((b) => h('option', { value: b }, c.bases[b].name)));
   base.value = look.baseSetting ?? '';
+  const motif = h('input', { 'data-testid': 'look-motif', maxlength: MAX_MOTIF, placeholder: c.motifHint, value: look.baseMotif ?? '' });
   const styleHelp = h('p', { class: 'hint', 'data-testid': 'look-style-help' });
   const baseHelp = h('p', { class: 'hint', 'data-testid': 'look-base-help' });
   const current = (): Look => ({
     style: isPaintingStyle(style.value) ? style.value : 'my-method',
     ...(isBaseSetting(base.value) ? { baseSetting: base.value } : {}),
+    ...(cleanMotif(motif.value) ? { baseMotif: cleanMotif(motif.value) } : {}),
   });
   const explain = () => {
     const l = current();
@@ -27,7 +29,7 @@ export function lookFields(look: Look, onChange: (look: Look) => void): HTMLElem
     baseHelp.textContent = l.baseSetting ? c.bases[l.baseSetting].help : '';
   };
   explain();
-  for (const el of [style, base]) {
+  for (const el of [style, base, motif]) {
     el.addEventListener('change', () => {
       explain();
       onChange(current());
@@ -36,5 +38,6 @@ export function lookFields(look: Look, onChange: (look: Look) => void): HTMLElem
   return h('fieldset', { class: 'look', 'data-testid': 'look' },
     h('legend', {}, c.title),
     h('label', {}, c.style, style), styleHelp,
-    h('label', {}, c.base, base), baseHelp);
+    h('label', {}, c.base, base), baseHelp,
+    h('label', {}, c.motif, motif));
 }

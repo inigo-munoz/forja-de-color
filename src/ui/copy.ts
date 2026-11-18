@@ -25,6 +25,8 @@ export const copy = {
     style: 'Style',
     base: 'Base',
     noBase: 'No setting',
+    motif: 'Base motif (optional)',
+    motifHint: 'e.g. lava river, graveyard, autumn forest',
     styles: {
       'my-method': { name: 'My method', help: 'Quick and showy: BSL and slapchop.' },
       nmm: { name: 'NMM (non-metallic metal)', help: 'Metal faked with light and shadow only.' },
@@ -134,6 +136,7 @@ export const copy = {
     deleteAdvice: 'Delete this advice',
     paintImage: 'Paint it with ChatGPT',
     angles: 'Angles',
+    baseMaterials: 'For the base (materials you may not have)',
     addAngle: 'Add angle',
     deleteAngle: 'Delete',
     deleteAngleConfirm: 'Delete this angle photo?',
