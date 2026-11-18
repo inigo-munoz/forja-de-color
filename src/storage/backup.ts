@@ -94,6 +94,8 @@ export function validateBackup(file: unknown): string | null {
     return 'extraPhotoBlobIds' in o && !(Array.isArray(o.extraPhotoBlobIds) && o.extraPhotoBlobIds.every((x) => typeof x === 'string'));
   });
   if (badAngles >= 0) return `project #${badAngles + 1} has invalid extra photos`;
+  const badMotif = file.projects.findIndex((p) => 'baseMotif' in (p as Record<string, unknown>) && typeof (p as Record<string, unknown>).baseMotif !== 'string');
+  if (badMotif >= 0) return `project #${badMotif + 1} has an invalid base motif`;
   const doneZonesError = file.projects.map((p, i) => doneZonesProblem(p as Record<string, unknown>, i)).find((e) => e !== null);
   if (doneZonesError) return doneZonesError;
   if (!isObj(file.blobs)) return 'backup has no valid photos';

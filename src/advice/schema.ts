@@ -29,6 +29,8 @@ export interface RecipeResponse {
   /** half-painted only */
   complements?: PaintRef[];
   remainingSteps?: string[];
+  /** Basing materials the advisor recommends for a themed base; the user may not have them. */
+  baseMaterials?: string[];
 }
 
 export interface ConsultationResponse {

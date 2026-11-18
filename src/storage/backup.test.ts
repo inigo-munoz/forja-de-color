@@ -205,4 +205,9 @@ describe('backup — done zones', () => {
     expect(validateBackup(withLook({ extraPhotoBlobIds: 'x' }))).toBe('project #1 has invalid extra photos');
     expect(validateBackup(withLook({ extraPhotoBlobIds: [1] }))).toBe('project #1 has invalid extra photos');
   });
+
+  it('accepts a text base motif and rejects anything else', () => {
+    expect(validateBackup(withLook({ baseMotif: 'lava' }))).toBeNull();
+    expect(validateBackup(withLook({ baseMotif: 3 }))).toBe('project #1 has an invalid base motif');
+  });
 });

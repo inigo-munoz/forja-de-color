@@ -1,5 +1,5 @@
 import type { AdviceEntry } from '../advice/schema';
-import type { BaseSetting, Look, PaintingStyle } from './style';
+import { cleanMotif, type BaseSetting, type Look, type PaintingStyle } from './style';
 
 export interface ProgressPhoto {
   id: string;
@@ -26,15 +26,19 @@ export interface Project {
   style?: PaintingStyle;
   /** Absent: no setting for the base. */
   baseSetting?: BaseSetting;
+  /** Free-text theme for the base; absent when there is none. */
+  baseMotif?: string;
 }
 
 /** Sets the project's look; my method and no base setting are stored as absent, like older projects. */
 export function setLook(p: Project, look: Look): Project {
-  const { style: _s, baseSetting: _b, ...rest } = p;
+  const { style: _s, baseSetting: _b, baseMotif: _m, ...rest } = p;
+  const motif = cleanMotif(look.baseMotif);
   return {
     ...rest,
     ...(look.style && look.style !== 'my-method' ? { style: look.style } : {}),
     ...(look.baseSetting ? { baseSetting: look.baseSetting } : {}),
+    ...(motif ? { baseMotif: motif } : {}),
   };
 }
 
