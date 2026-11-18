@@ -48,13 +48,13 @@ describe('buildAdvicePackage', () => {
     expect(start.text).toContain('only use paints and brushes from this inventory; cite them by brand and code');
   });
 
-  it('sends each paint\'s BSL role as the last inventory column', () => {
-    expect(start.text).toContain('INVENTORY (brand|code|name|family|order|role)');
-    expect(start.text).toContain('Vallejo|72.020|Azul Imperial|BSL Blue|3|base');
-    expect(start.text).toContain('Vallejo|72.019|Azul Negro|BSL Blue|4|shadow');
-    expect(start.text).toContain('Vallejo|72.021|Azul Mágico|BSL Blue|2|light');
-    expect(start.text).toContain('Vallejo|72.118|Azul Amanecer|BSL Blue|1|extra light');
-    expect(start.text).toContain('Vallejo|72.011|Rojo Visceral|BSL Multipurpose|1|\n');
+  it("sends each paint's BSL role, then its type, in the inventory", () => {
+    expect(start.text).toContain('INVENTORY (brand|code|name|family|order|role|type)');
+    expect(start.text).toContain('Vallejo|72.020|Azul Imperial|BSL Blue|3|base|opaque');
+    expect(start.text).toContain('Vallejo|72.019|Azul Negro|BSL Blue|4|shadow|opaque');
+    expect(start.text).toContain('Vallejo|72.021|Azul Mágico|BSL Blue|2|light|opaque');
+    expect(start.text).toContain('Vallejo|72.118|Azul Amanecer|BSL Blue|1|extra light|opaque');
+    expect(start.text).toContain('Vallejo|72.011|Rojo Visceral|BSL Multipurpose|1||opaque\n');
   });
 
   it('fills the role from the seed for a stored inventory without roles', () => {
@@ -64,7 +64,7 @@ describe('buildAdvicePackage', () => {
 
   it('tells the AI to use the BSL paints by their role', () => {
     expect(start.text).toContain('For a BSL zone use the family\'s base, shadow and light paints by their role');
-    expect(buildBrainInstructions(SEED_INVENTORY)).toContain('|role)');
+    expect(buildBrainInstructions(SEED_INVENTORY)).toContain('|role|type)');
   });
 
   it('stays under 8000 characters with the seed inventory', () => {

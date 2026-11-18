@@ -1,12 +1,17 @@
 import { adviceLookLines } from '../projects/style';
-import type { BslRole, Inventory } from '../paints/paint';
+import { findPaint } from '../paints/inventory';
+import type { BslRole, Inventory, PaintRef } from '../paints/paint';
 import { bslRole } from '../paints/roles';
 import type { AdvicePackage, AdviceRequest } from './schema';
 
-const METHOD = `You are my miniature painting assistant. I paint fast but want a good-looking result.
+// The translucency rule follows the inventory: with no inks or washes, translucent colour comes from thinning.
+const NO_TRANSLUCENT = '- I have no translucent paints: make them by thinning my opaque paints. Every Slapchop zone needs a dilution ratio "N:M" (paint:medium or water), e.g. "1:3".';
+const WITH_TRANSLUCENT = '- For translucent colour, use my inks and washes where they suit, or thin my opaque paints. Every Slapchop zone needs a dilution ratio "N:M" (paint:medium or water), e.g. "1:3".';
+
+const method = (inv: Inventory) => `You are my miniature painting assistant. I paint fast but want a good-looking result.
 METHOD
 - Default technique is Slapchop: black primer, then a heavy grey drybrush and a lighter white drybrush to sketch light and shadow, then translucent colour on top.
-- I have no translucent paints: make them by thinning my opaque paints. Every Slapchop zone needs a dilution ratio "N:M" (paint:medium or water), e.g. "1:3".
+${inv.paints.some((p) => p.type === 'ink' || p.type === 'wash') ? WITH_TRANSLUCENT : NO_TRANSLUCENT}
 - Use BSL (base, shadow, light) triads only on detail zones: faces, skin, focal points. Prefer the BSL families listed below; each family is ordered 1 (lightest) to 4 (darkest).
 - For a BSL zone use the family's base, shadow and light paints by their role (extra light for final highlights); a family without a shadow paint is shaded by glazing its base.
 - Rules: only use paints and brushes from this inventory; cite them by brand and code. Never invent paints. Do not repeat the same paint needlessly.
@@ -46,10 +51,10 @@ const ROLE_WORDS: Record<BslRole, string> = { base: 'base', shadow: 'shadow', li
 function inventoryLines(inv: Inventory): string {
   const paints = inv.paints.map((p) => {
     const role = bslRole(p);
-    return [p.brand, p.code, p.name, p.family?.name ?? p.range, p.family?.order ?? '', role ? ROLE_WORDS[role] : ''].join('|');
+    return [p.brand, p.code, p.name, p.family?.name ?? p.range, p.family?.order ?? '', role ? ROLE_WORDS[role] : '', p.type].join('|');
   });
   const brushes = inv.brushes.map((b) => `brush|${b.code}|${b.name}`);
-  return ['INVENTORY (brand|code|name|family|order|role)', ...paints, ...brushes].join('\n');
+  return ['INVENTORY (brand|code|name|family|order|role|type)', ...paints, ...brushes].join('\n');
 }
 
 function momentRequest(req: AdviceRequest): string {
@@ -65,17 +70,36 @@ function momentRequest(req: AdviceRequest): string {
   }
 }
 
+function describe(inv: Inventory, ref: PaintRef): string {
+  const p = findPaint(inv, ref);
+  return p ? `${p.name} (${p.brand} ${p.code})` : `${ref.brand} ${ref.code}`;
+}
+
+/** Half-painted only: the latest recipe, so the AI keeps its colours and knows what is painted. */
+function previousRecipe(req: AdviceRequest, inv: Inventory): string | null {
+  if (req.moment !== 'half-painted' || !req.previous) return null;
+  const done = new Set(req.previous.doneZones ?? []);
+  const zones = req.previous.response.zones.map((z, i) => {
+    const paints = z.technique === 'bsl' && z.bsl
+      ? `base ${describe(inv, z.bsl.base)}, shadow ${describe(inv, z.bsl.shadow)}, light ${describe(inv, z.bsl.light)}`
+      : z.paint ? describe(inv, z.paint) : 'no paint';
+    return `- ${z.name} (${z.technique}): ${paints}. ${done.has(i) ? 'Painted.' : 'Not painted yet.'}`;
+  });
+  return ['PREVIOUS RECIPE for this miniature (keep these colours unless there is a reason to change them, and say why if you change one):', ...zones].join('\n');
+}
+
 export function buildAdvicePackage(req: AdviceRequest, inv: Inventory, photo: Blob): AdvicePackage {
   const format =
     req.moment === 'during' ? CONSULTATION_FORMAT : RECIPE_FORMAT(req.moment);
   const look = adviceLookLines(req);
-  const text = [METHOD, inventoryLines(inv), momentRequest(req), ...(look.length ? [look.join('\n')] : []), format].join('\n\n');
+  const previous = previousRecipe(req, inv);
+  const text = [method(inv), inventoryLines(inv), momentRequest(req), ...(previous ? [previous] : []), ...(look.length ? [look.join('\n')] : []), format].join('\n\n');
   return { text, image: photo };
 }
 
 export function buildBrainInstructions(inv: Inventory): string {
   return [
-    METHOD,
+    method(inv),
     inventoryLines(inv),
     'When I send a photo I will say the moment (start, primed, half-painted or during). For start, primed and half-painted answer with this format (for primed, leave prep empty):',
     RECIPE_FORMAT('start'),

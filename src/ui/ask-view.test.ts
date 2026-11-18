@@ -130,4 +130,26 @@ describe('ask view — review fixes', () => {
     await ticks();
     expect(root.querySelector('[role="status"]')!.textContent).toContain('Instructions copied');
   });
+
+  it('half-painted without a new photo or progress photos asks for a current one instead of sending the unpainted photo', async () => {
+    const { deps, root } = await setup();
+    choose(root, 'half-painted');
+    click(root, 'send');
+    await ticks();
+    expect(deps.bridge.send).not.toHaveBeenCalled();
+    expect(root.querySelector('[role="status"]')!.textContent).toContain('current photo');
+  });
+
+  it('half-painted sends the earlier recipe and the zones ticked as painted', async () => {
+    const { deps, root } = await setup();
+    const p = (await deps.repo.getProject('p1'))!;
+    await deps.repo.saveProject({ ...p, progress: [{ id: 'g1', takenAt: '2026-11-12T10:00:00.000Z', blobId: p.initialPhotoBlobId! }], advice: [{ ...p.advice[0], doneZones: [0] }] });
+    await renderAsk(root, deps, 'p1');
+    choose(root, 'half-painted');
+    click(root, 'send');
+    await ticks();
+    const text = deps.bridge.send.mock.calls[0][0].text;
+    expect(text).toContain('PREVIOUS RECIPE');
+    expect(text).toContain('- capa (slapchop): Azul Mágico (Vallejo 72.021). Painted.');
+  });
 });

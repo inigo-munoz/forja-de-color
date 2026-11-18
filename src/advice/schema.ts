@@ -57,6 +57,8 @@ export interface AdviceEntry {
 
 export interface AdviceRequest extends Look {
   moment: Moment;
+  /** Half-painted: the project's latest recipe and the zones ticked as painted. */
+  previous?: { response: RecipeResponse; doneZones?: number[] };
   zone?: string;
   question?: Question;
   freeText?: string;

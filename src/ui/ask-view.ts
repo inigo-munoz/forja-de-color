@@ -59,14 +59,22 @@ export async function renderAsk(root: HTMLElement, deps: Deps, id: string): Prom
   const saveBtn = h('button', { 'data-testid': 'save-answer', hidden: true }, copy.ask.save);
 
   const send = async () => {
-    const photo = await pickPhoto(deps, photoInput, project);
-    if (!photo) return void (sendStatus.textContent = copy.ask.photo);
     const moment = currentMoment();
+    const latest = (await deps.repo.getProject(id)) ?? project;
+    // Half-painted needs the miniature as it is now: never the unpainted initial photo.
+    if (moment === 'half-painted' && !photoInput.files?.length && !latest.progress.length) {
+      return void (sendStatus.textContent = copy.ask.currentPhoto);
+    }
+    const photo = await pickPhoto(deps, photoInput, latest);
+    if (!photo) return void (sendStatus.textContent = copy.ask.photo);
+    const recipe = [...latest.advice].reverse().find((e) => e.response.kind === 'recipe');
     const req: AdviceRequest = moment === 'during'
       ? { moment, zone: zoneText.value.trim() || zoneSelect.value, question: question.value as Question, freeText: details.value.trim() || undefined }
-      : { moment };
+      : moment === 'half-painted' && recipe && recipe.response.kind === 'recipe'
+        ? { moment, previous: { response: recipe.response, doneZones: recipe.doneZones } }
+        : { moment };
     // The project's look as saved now: it may have been changed on this screen.
-    const look = lookOf((await deps.repo.getProject(id)) ?? project);
+    const look = lookOf(latest);
     const pkg = buildAdvicePackage({ ...req, ...look }, await deps.repo.getInventory(), photo);
     const result = await deps.bridge.send(pkg);
     const fallback = result === 'fallback';
