@@ -8,3 +8,4 @@ export async function storePhoto(deps: Deps, input: HTMLInputElement): Promise<s
   const resized = await (deps.resize ?? resizeImage)(file);
   return deps.repo.putBlob(resized);
 }
+

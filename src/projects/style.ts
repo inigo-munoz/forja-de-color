@@ -10,14 +10,24 @@ export type BaseSetting = (typeof BASE_SETTINGS)[number];
 export interface Look {
   style?: PaintingStyle;
   baseSetting?: BaseSetting;
+  /** Free-text theme for the base ("lava", "graveyard"…), alone or with a setting. */
+  baseMotif?: string;
 }
 
 export const isPaintingStyle = (s: unknown): s is PaintingStyle => (PAINTING_STYLES as readonly unknown[]).includes(s);
 export const isBaseSetting = (s: unknown): s is BaseSetting => (BASE_SETTINGS as readonly unknown[]).includes(s);
 
 /** A project's look; a project saved before styles existed is painted with my method. */
+/** Longest base motif kept. */
+export const MAX_MOTIF = 100;
+
+/** A motif as stored: trimmed, without a final full stop, at most MAX_MOTIF characters; empty → absent. */
+export const cleanMotif = (m: string | undefined): string | undefined =>
+  m?.trim().replace(/\.+$/, '').slice(0, MAX_MOTIF).trim() || undefined;
+
 export function lookOf(p: Look): Look {
-  return { style: p.style ?? 'my-method', ...(p.baseSetting ? { baseSetting: p.baseSetting } : {}) };
+  const motif = cleanMotif(p.baseMotif);
+  return { style: p.style ?? 'my-method', ...(p.baseSetting ? { baseSetting: p.baseSetting } : {}), ...(motif ? { baseMotif: motif } : {}) };
 }
 
 // Prompt text: same as the Android app (domain/projects/PaintingStyle.kt). My method adds nothing,
@@ -55,13 +65,26 @@ export function adviceLookLines(look: Look): string[] {
     lines.push(ADVICE_STYLE[look.style], 'Keep my method above for speed, but follow this style in the colours, the steps and the tips.');
   }
   if (look.baseSetting) lines.push(ADVICE_BASE[look.baseSetting]);
+  const motif = cleanMotif(look.baseMotif);
+  if (motif) lines.push(`BASE MOTIF: ${motif}.`);
+  if (look.baseSetting || motif) lines.push(BASE_MATERIALS);
   return lines;
 }
+
+// With a themed base the advisor may go beyond the paint inventory, for basing materials only.
+const BASE_MATERIALS = 'BASE MATERIALS: you may also recommend basing materials for this base (sand, static grass, snow, pigments, tufts…) in a top-level "baseMaterials" list of short strings; I may not have them.';
+const IMAGE_TERRAIN = 'On the base only, you may add terrain that fits it (snow, rocks, plants, effects); leave the miniature itself exactly as it is.';
+
+/** The base has a setting or a motif: the advisor may suggest materials and the image may add terrain. */
+export const themedBase = (look: Look): boolean => !!look.baseSetting || !!cleanMotif(look.baseMotif);
 
 /** Lines for the image prompt; empty for my method without a base setting. */
 export function imageLookLines(look: Look): string[] {
   const lines: string[] = [];
   if (look.style && look.style !== 'my-method') lines.push(IMAGE_STYLE[look.style]);
   if (look.baseSetting) lines.push(IMAGE_BASE[look.baseSetting]);
+  const motif = cleanMotif(look.baseMotif);
+  if (motif) lines.push(`Base theme: ${motif}.`);
+  if (look.baseSetting || motif) lines.push(IMAGE_TERRAIN);
   return lines;
 }

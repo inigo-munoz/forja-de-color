@@ -72,6 +72,7 @@ function validate(data: unknown): string[] {
     });
     if (data.complements !== undefined && !(Array.isArray(data.complements) && data.complements.every(isRef))) errors.push('recipe: complements must be paints');
     if (data.remainingSteps !== undefined && !isStrArray(data.remainingSteps)) errors.push('recipe: remainingSteps must be a list of steps');
+    if (data.baseMaterials !== undefined && !isStrArray(data.baseMaterials)) errors.push('recipe: baseMaterials must be a list of materials');
   } else if (data.kind === 'consultation') {
     for (const f of ['zone', 'question', 'technique'] as const) {
       if (typeof data[f] !== 'string') errors.push(`consultation: missing ${f}`);

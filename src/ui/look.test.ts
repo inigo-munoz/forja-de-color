@@ -72,4 +72,23 @@ describe('painting style', () => {
     expect(text).toContain('Painting style: grimdark');
     expect(text).toContain('Base: magical ground');
   });
+
+  it('a free-text base motif is saved and sent to the advisor', async () => {
+    const { deps, root } = await setup();
+    await renderProject(root, deps, 'p1');
+    const motif = root.querySelector<HTMLInputElement>('[data-testid="look-motif"]')!;
+    motif.value = 'río de lava';
+    motif.dispatchEvent(new Event('change', { bubbles: true }));
+    await ticks();
+    expect((await deps.repo.getProject('p1'))!.baseMotif).toBe('río de lava');
+  });
+
+  it('a recipe shows the basing materials the advisor recommends', async () => {
+    const withMaterials = { ...recipe, response: { ...recipe.response, baseMaterials: ['arena fina', 'nieve artificial'] } } as AdviceEntry;
+    const { deps, root } = await setup((p) => addAdvice(p, withMaterials));
+    await renderProject(root, deps, 'p1');
+    const box = root.querySelector('[data-testid="base-materials"]')!;
+    expect(box.textContent).toContain('arena fina');
+    expect(box.textContent).toContain('nieve artificial');
+  });
 });

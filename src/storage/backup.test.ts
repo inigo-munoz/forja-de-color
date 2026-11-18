@@ -191,4 +191,23 @@ describe('backup — done zones', () => {
     expect(validateBackup(withPaint({ nameEn: 'Dead White' }))).toBeNull();
     expect(validateBackup(withPaint({ nameEn: 3 }))).toBe('paint #1 has an invalid English name');
   });
+
+  it('exports the angles with their photos and imports them back; rejects a malformed list', async () => {
+    const repo = await fresh();
+    const a = await repo.putBlob(new Blob([new Uint8Array([7, 7])], { type: 'image/jpeg' }));
+    await repo.saveProject({ ...createProject('B', now, 'p1'), extraPhotoBlobIds: [a] });
+    const file = JSON.parse(JSON.stringify(await exportAll(repo, now)));
+    expect(file.projects[0].extraPhotoBlobIds).toEqual([a]);
+    expect(Object.keys(file.blobs)).toContain(a);
+    await repo.clearAll();
+    expect(await importAll(repo, file)).toEqual({ ok: true });
+    expect((await repo.getProject('p1'))?.extraPhotoBlobIds).toEqual([a]);
+    expect(validateBackup(withLook({ extraPhotoBlobIds: 'x' }))).toBe('project #1 has invalid extra photos');
+    expect(validateBackup(withLook({ extraPhotoBlobIds: [1] }))).toBe('project #1 has invalid extra photos');
+  });
+
+  it('accepts a text base motif and rejects anything else', () => {
+    expect(validateBackup(withLook({ baseMotif: 'lava' }))).toBeNull();
+    expect(validateBackup(withLook({ baseMotif: 3 }))).toBe('project #1 has an invalid base motif');
+  });
 });

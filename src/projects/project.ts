@@ -1,5 +1,5 @@
 import type { AdviceEntry } from '../advice/schema';
-import type { BaseSetting, Look, PaintingStyle } from './style';
+import { cleanMotif, type BaseSetting, type Look, type PaintingStyle } from './style';
 
 export interface ProgressPhoto {
   id: string;
@@ -14,7 +14,10 @@ export interface Project {
   name: string;
   createdAt: string;
   status: 'in-progress' | 'done';
+  /** The main photo: list, header, Before/after and "Paint it with ChatGPT". */
   initialPhotoBlobId?: string;
+  /** Up to MAX_ANGLES more photos of the unpainted miniature; absent when there are none. */
+  extraPhotoBlobIds?: string[];
   targetImageBlobId?: string;
   notes: string;
   progress: ProgressPhoto[];
@@ -23,15 +26,19 @@ export interface Project {
   style?: PaintingStyle;
   /** Absent: no setting for the base. */
   baseSetting?: BaseSetting;
+  /** Free-text theme for the base; absent when there is none. */
+  baseMotif?: string;
 }
 
 /** Sets the project's look; my method and no base setting are stored as absent, like older projects. */
 export function setLook(p: Project, look: Look): Project {
-  const { style: _s, baseSetting: _b, ...rest } = p;
+  const { style: _s, baseSetting: _b, baseMotif: _m, ...rest } = p;
+  const motif = cleanMotif(look.baseMotif);
   return {
     ...rest,
     ...(look.style && look.style !== 'my-method' ? { style: look.style } : {}),
     ...(look.baseSetting ? { baseSetting: look.baseSetting } : {}),
+    ...(motif ? { baseMotif: motif } : {}),
   };
 }
 
@@ -71,4 +78,25 @@ export function setZoneDone(p: Project, entryId: string, zone: number, done: boo
     return zones.size ? { ...rest, doneZones: [...zones].sort((a, b) => a - b) } : rest;
   });
   return { ...p, advice };
+}
+
+/** Extra angles a project keeps besides its main photo. */
+export const MAX_ANGLES = 3;
+
+/** The main photo and its angles, in order: what the advisor sends for start and primed. */
+export function photosOf(p: Project): string[] {
+  return [p.initialPhotoBlobId, ...(p.extraPhotoBlobIds ?? [])].filter((id): id is string => !!id);
+}
+
+/** Adds an angle; ignored once the project has MAX_ANGLES. */
+export function addAngle(p: Project, blobId: string): Project {
+  const angles = p.extraPhotoBlobIds ?? [];
+  return angles.length >= MAX_ANGLES ? p : { ...p, extraPhotoBlobIds: [...angles, blobId] };
+}
+
+/** Removes an angle; with none left the field goes away, as in older projects. */
+export function removeAngle(p: Project, blobId: string): Project {
+  const { extraPhotoBlobIds, ...rest } = p;
+  const left = (extraPhotoBlobIds ?? []).filter((id) => id !== blobId);
+  return left.length ? { ...rest, extraPhotoBlobIds: left } : rest;
 }

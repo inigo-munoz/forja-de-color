@@ -35,6 +35,14 @@ describe('share bridge', () => {
     expect(arg.files?.[0]).toBeInstanceOf(File);
   });
 
+  it('shares every angle when the package carries several photos', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    const nav = fakeNavigator({ share, canShare: () => true });
+    await createShareBridge({ navigator: nav }).send({ ...pkg, extraImages: [new Blob(['b']), new Blob(['c'])] });
+    const files = (share.mock.calls[0][0] as ShareData).files!;
+    expect(files.map((f) => f.name)).toEqual(['forja-de-color.jpg', 'forja-de-color-2.jpg', 'forja-de-color-3.jpg']);
+  });
+
   it('copies the prompt and downloads the photo when files cannot be shared', async () => {
     const nav = fakeNavigator({ canShare: () => false });
     const d = downloads();

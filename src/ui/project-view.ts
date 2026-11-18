@@ -7,7 +7,7 @@ import type { AdviceEntry, ConsultationResponse, RecipeResponse, ZoneRecipe } fr
 import { findPaint } from '../paints/inventory';
 import type { Inventory, PaintRef } from '../paints/paint';
 import { paintKey } from '../paints/paint';
-import { addProgressPhoto, markDone, reopen, setLook, setNotes, setZoneDone, type Project } from '../projects/project';
+import { MAX_ANGLES, addAngle, addProgressPhoto, markDone, removeAngle, reopen, setLook, setNotes, setZoneDone, type Project } from '../projects/project';
 import { copy } from './copy';
 import { blobUrl, h, show, swatch, type Deps } from './dom';
 import { storePhoto } from './photos';
@@ -52,6 +52,8 @@ function recipeView(inv: Inventory, r: RecipeResponse, unknown: Set<string>, don
     ...r.zones.map((z, i) => zoneView(inv, z, unknown, i, done.has(i), onToggle)),
     r.complements?.length ? h('div', {}, h('h4', {}, copy.project.complements), h('ul', {}, ...r.complements.map((c) => h('li', {}, paintLabel(inv, c, unknown))))) : null,
     r.remainingSteps?.length ? h('div', {}, h('h4', {}, copy.project.remaining), list(r.remainingSteps)) : null,
+    // Beyond the paint inventory, for the base only: the owner may need to buy them.
+    r.baseMaterials?.length ? h('div', { 'data-testid': 'base-materials' }, h('h4', {}, copy.project.baseMaterials), list(r.baseMaterials)) : null,
     h('h4', {}, copy.project.tips), list(r.tips),
   ].filter((x): x is HTMLElement => x !== null);
 }
@@ -120,6 +122,30 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
   });
   notes.addEventListener('blur', () => void saveNotes());
   window.addEventListener('pagehide', () => void saveNotes(), { once: true });
+
+  // Angles of the unpainted miniature, besides the main photo (up to MAX_ANGLES).
+  const angleInput = h('input', { type: 'file', accept: 'image/*', 'data-testid': 'add-angle' });
+  angleInput.addEventListener('change', async () => {
+    const blobId = await storePhoto(deps, angleInput);
+    if (blobId) await update((p) => addAngle(p, blobId));
+  });
+  const angleUrls = await Promise.all((project.extraPhotoBlobIds ?? []).map(async (id) => [id, await blobUrl(deps, id)] as const));
+  const angles = project.initialPhotoBlobId
+    ? h('section', { class: 'card', 'data-testid': 'angles' }, h('h3', {}, copy.project.angles),
+      h('div', { class: 'thumbs' }, ...angleUrls.map(([id, url]) => h('figure', { 'data-testid': 'angle-photo' },
+        url ? h('img', { src: url, alt: '' }) : null,
+        h('button', {
+          type: 'button', class: 'secondary', 'data-testid': 'delete-angle',
+          onclick: async () => {
+            if (!window.confirm(copy.project.deleteAngleConfirm)) return;
+            await update((p) => removeAngle(p, id));
+            // Only when no project uses it any more (one restored from a backup may share it).
+            const used = (await deps.repo.listProjects()).some((p) => [p.initialPhotoBlobId, ...(p.extraPhotoBlobIds ?? []), p.targetImageBlobId, ...p.progress.map((x) => x.blobId)].includes(id));
+            if (!used) await deps.repo.deleteBlob(id);
+          },
+        }, copy.project.deleteAngle)))),
+      (project.extraPhotoBlobIds?.length ?? 0) < MAX_ANGLES ? h('label', { class: 'button' }, copy.project.addAngle, angleInput) : null)
+    : null;
 
   const progressInput = h('input', { type: 'file', accept: 'image/*', 'data-testid': 'add-progress' });
   progressInput.addEventListener('change', async () => {
@@ -190,6 +216,7 @@ export async function renderProject(root: HTMLElement, deps: Deps, id: string): 
     lookFields(lookOf(project), (look) => void update((p) => setLook(p, look))),
     ...[...project.advice].reverse().map(entryView),
     h('section', { class: 'card' }, h('h3', {}, copy.project.notes), notes),
+    angles,
     h('section', { class: 'card' }, h('h3', {}, copy.project.progress), h('div', { class: 'thumbs' }, ...progress),
       h('label', { class: 'button' }, copy.project.addProgress, progressInput)),
     h('section', { class: 'card' }, h('h3', {}, copy.project.target), target ? h('img', { src: target, alt: '', class: 'photo' }) : null,

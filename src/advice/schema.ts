@@ -29,6 +29,8 @@ export interface RecipeResponse {
   /** half-painted only */
   complements?: PaintRef[];
   remainingSteps?: string[];
+  /** Basing materials the advisor recommends for a themed base; the user may not have them. */
+  baseMaterials?: string[];
 }
 
 export interface ConsultationResponse {
@@ -57,6 +59,8 @@ export interface AdviceEntry {
 
 export interface AdviceRequest extends Look {
   moment: Moment;
+  /** Half-painted: the project's latest recipe and the zones ticked as painted. */
+  previous?: { response: RecipeResponse; doneZones?: number[] };
   zone?: string;
   question?: Question;
   freeText?: string;
@@ -65,4 +69,6 @@ export interface AdviceRequest extends Look {
 export interface AdvicePackage {
   text: string;
   image: Blob;
+  /** More angles of the miniature, shared after the main image. */
+  extraImages?: Blob[];
 }
