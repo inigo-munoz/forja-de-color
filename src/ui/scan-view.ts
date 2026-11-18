@@ -36,7 +36,7 @@ export async function renderScan(root: HTMLElement, deps: Deps, setCode?: string
     if (!file) return void (status.textContent = c.noPhoto);
     const image = await (deps.resize ?? resizeImage)(file);
     const fallback = (await deps.bridge.send({ text: buildScanPrompt(), image })) === 'fallback';
-    status.textContent = fallback ? `${copy.ask.fallback} ${copy.ask.promptBox}` : '';
+    status.textContent = fallback ? `${copy.ask.fallback} ${copy.ask.promptBox}` : copy.ask.pasteHint;
     promptBox.value = buildScanPrompt();
     promptBox.hidden = !fallback;
     copyPrompt.hidden = !fallback;

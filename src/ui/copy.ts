@@ -156,6 +156,8 @@ export const copy = {
     fallback: 'Prompt copied and image downloaded — paste both in your chat.',
     promptBox: 'If the prompt did not copy, copy it from here:',
     copyPrompt: 'Copy prompt',
+    // Claude keeps only the shared photo and drops the text; the instructions are on the clipboard.
+    pasteHint: 'Instructions copied. If the chat only shows the photo, long-press the text box and tap Paste (or the clipboard suggestion on the keyboard).',
     paste: 'Paste answer',
     pasteHere: 'Paste the answer here',
     save: 'Save answer',
